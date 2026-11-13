@@ -35,14 +35,14 @@ a dataset rather than just retrieving and citing text.
 1. Still in the Code Interpreter tool's configuration, select **+ Upload file** (Code
    Interpreter keeps its own attached files, separate from the File Search knowledge source from
    Module 3).
-2. Choose [`discrepancy-trends.csv`](/lab/data/discrepancy-trends.csv) from your local clone of
+2. Choose [`discrepancy-trends.csv`](/data/discrepancy-trends.csv) from your local clone of
    this lab.
 3. Wait for the upload to show a **Ready** (or equivalent "processed") status before continuing.
 4. Save the agent configuration again if the portal requires a separate save after the upload.
 
 > **About this dataset:** `discrepancy-trends.csv` contains a year's worth of historical
 > discrepancy events (date, discrepancy type, vendor, dollar amount, and resolution status) — see
-> [data/README.md](/lab/data/README.md) for details. It's a separate file from the PO records used
+> [data/README.md](/data/README.md) for details. It's a separate file from the PO records used
 > in Module 5; this one is for trend analysis, not looking up an individual PO.
 
 ### 4. Update the system instructions

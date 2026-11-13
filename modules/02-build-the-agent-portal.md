@@ -1,7 +1,9 @@
 # Module 2: Build the Agent (Portal)
 
-**Objective:** Create the Invoice Discrepancy Assistant as a hosted Prompt Agent in the Foundry
+**Objective:** Create the Invoice Discrepancy Assistant as a Prompt Agent in the Foundry
 portal, write its system instructions, and test it in the playground.
+
+This is a Prompt Agent (AgentKind.PROMPT) - server-managed by Foundry, not to be confused with the separate Hosted Agent kind (AgentKind.HOSTED) you'll meet in Module 9.
 
 **Estimated duration:** 25 minutes
 
@@ -15,10 +17,10 @@ portal, write its system instructions, and test it in the playground.
 1. In your Foundry project, select **Agents** from the left-hand navigation.
 2. Select **+ New agent**.
 
-### 2. Create the hosted Prompt Agent
+### 2. Create the Prompt Agent
 
 1. Choose the **Prompt agent** type (a server-hosted agent configured declaratively in the
-   portal — as opposed to the code-first agents you'll build in Module 7).
+   portal — as opposed to the code-first agents you'll build in Module 8).
 2. Configure the basics:
    - **Name:** `Invoice Discrepancy Assistant`
    - **Model deployment:** `invoice-assistant-chat` (from Module 1)
@@ -58,13 +60,13 @@ connected first.
 > instructions keeps the agent from confidently guessing policy details or PO data it doesn't
 > actually have — you'll remove this caveat once grounding and tools are in place.
 
-### 4. Note how this agent differs from Module 7
+### 4. Note how this agent differs from Module 8
 
-This agent is a **hosted Prompt Agent**: its definition (instructions, model, and — starting in
-Modules 3–6 — knowledge and tools) lives in the Foundry service and is configured here in the
-portal (and, from Module 5 onward, extended via code as new agent versions). In Module 7, you'll
+This agent is a **Prompt Agent**: its definition (instructions, model, and — starting in
+Modules 3–7 — knowledge and tools) lives in the Foundry service and is configured here in the
+portal (and, from Module 5 onward, extended via code as new agent versions). In Module 8, you'll
 build a **separate, code-first** multi-agent system with the Microsoft Agent Framework SDK. Keep
-this distinction in mind — Modules 2–6 are all about this one hosted agent; Module 7 is a
+this distinction in mind — Modules 2–7 are all about this one hosted agent; Module 8 is a
 different, code-defined system that happens to address the same scenario.
 
 ### 5. Test in the playground

@@ -8,7 +8,7 @@ function-call loop yourself.
 
 **Estimated duration:** 45 minutes
 
-**Prerequisites:** Modules 2–4 complete — the **Invoice Discrepancy Assistant** hosted Prompt
+**Prerequisites:** Modules 2–4 complete — the **Invoice Discrepancy Assistant** Prompt
 Agent exists, grounds policy answers with File Search (Module 3), and can analyze
 `discrepancy-trends.csv` with Code Interpreter (Module 4). You'll need your Foundry project
 endpoint (noted in Module 1, Step 2) and a local clone of this lab repository.
@@ -16,8 +16,8 @@ endpoint (noted in Module 1, Step 2) and a local clone of this lab repository.
 > **Why code now?** Modules 2–4 configured the agent entirely through the portal. Starting here,
 > you'll extend the *same* hosted agent by creating new versions of it from code — this module
 > adds a custom function tool; Module 6 adds an MCP tool the same way. This is still the one
-> server-hosted Prompt Agent from Module 2, just gaining capabilities over successive versions.
-> It is **not** the code-first Agent Framework system you'll build in Module 7 — don't conflate
+> Prompt Agent from Module 2, just gaining capabilities over successive versions.
+> It is **not** the code-first Agent Framework system you'll build in Module 8 — don't conflate
 > the two.
 
 ## Steps
@@ -57,21 +57,37 @@ endpoint (noted in Module 1, Step 2) and a local clone of this lab repository.
    ```text
    PROJECT_ENDPOINT=https://<your-project-name>.<region>.ai.azure.com/api/projects/<project-name>
    MODEL_DEPLOYMENT=invoice-assistant-chat
-   LAB_REPO_ROOT=C:\path\to\your\local\clone\of\this\lab
+   LAB_REPO_ROOT=C:\path\to\your\local\clone
    ```
 
    - `PROJECT_ENDPOINT` is the project endpoint you noted in Module 1, Step 2.
    - `MODEL_DEPLOYMENT` is the deployment name from Module 1.
-   - `LAB_REPO_ROOT` is the path to wherever you cloned **this** lab repository (the folder that
-     contains `lab/data/po-records.csv`) — your code will read sample data from there instead of
-     duplicating it into your working folder.
+   - `LAB_REPO_ROOT` is the path to the root of your local clone of this repository - the folder
+     that directly contains a `data/` subfolder with `po-records.csv`, not a nested subfolder path.
+     Your code will read sample data from there instead of duplicating it into your working folder.
 
 2. Do not commit `.env` to source control — it's a good habit to add it to a `.gitignore` in your
    working folder even for a lab.
 
+3. Before continuing, verify the path in PowerShell. PowerShell does not load `.env` automatically;
+   set the session variable to the same value you entered in `.env` (replace the placeholder):
+
+   ```powershell
+   $env:LAB_REPO_ROOT = "C:\path\to\your\local\clone"
+   ```
+
+   Then run this one-line check:
+
+   ```powershell
+   Test-Path "$env:LAB_REPO_ROOT\data\po-records.csv"
+   ```
+
+   It should return `True`. If it returns `False`, `LAB_REPO_ROOT` is pointing at the wrong folder.
+   Correct the value in both `.env` and the PowerShell session before continuing.
+
 ### 3. Review the PO records the lookup tool will read
 
-1. Open [`data/po-records.csv`](/lab/data/po-records.csv) in VS Code.
+1. Open [`data/po-records.csv`](/data/po-records.csv) in VS Code.
 2. Note the columns: `po_number`, `vendor_name`, `item_description`, `unit_price`, `quantity`,
    `order_date`, `status` — and that `PO-10234` (the example you tried unsuccessfully in Module 2)
    is in there, so you can confirm the tool actually works this time.
@@ -95,7 +111,7 @@ import json
 import os
 from pathlib import Path
 
-DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "lab" / "data"
+DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 PO_RECORDS_FILE = DATA_DIR / "po-records.csv"
 
 
@@ -155,7 +171,13 @@ import json
 import os
 
 from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import FunctionTool, PromptAgentDefinition
+from azure.ai.projects.models import (
+    CodeInterpreterContainerAuto,
+    CodeInterpreterTool,
+    FileSearchTool,
+    FunctionTool,
+    PromptAgentDefinition,
+)
 from azure.identity import DefaultAzureCredential
 from dotenv import load_dotenv
 from openai.types.responses.response_input_param import FunctionCallOutput, ResponseInputParam
@@ -220,30 +242,52 @@ po_lookup_tool = FunctionTool(
 This is the same instructions text from Modules 2–4, with the final paragraph (which previously
 said the agent didn't yet have a PO lookup tool) replaced with the paragraph granting it.
 
-> ## ⚠️ Verify before running
->
-> `create_version` (Step 6 below) replaces the agent's **entire** tool list for that version — it
-> does not merge with the File Search knowledge source (Module 3) or the Code Interpreter tool and
-> uploaded file (Module 4) you already configured in the portal. If you call `create_version` with
-> `tools=[po_lookup_tool]` alone, the new version will have **only** the PO lookup tool, and the
-> portal-configured File Search and Code Interpreter tools will stop working for that version.
->
-> You must **also** include the existing File Search and Code Interpreter tool definitions in the
-> same `tools=[...]` list alongside `po_lookup_tool`. The exact SDK class names and constructor
-> parameters for referencing your **existing** Module 3 vector store (File Search) and Module 4
-> uploaded file (Code Interpreter) from code were not available to verify against an official
-> example at the time this module was written — confirm the current class names, required IDs,
-> and parameters against your installed `azure-ai-projects` package's reference docs or VS Code
-> IntelliSense (for example, `from azure.ai.projects.models import ...` and inspect what's
-> available) before you run Step 6, and adjust the `tools=[...]` list below accordingly. If you
-> skip this, re-test Modules 3 and 4's playground questions after Step 7 — if they stop returning
-> grounded/code-executed answers, this is almost certainly why.
+`create_version` replaces the entire tool list, so include File Search and Code Interpreter
+alongside the PO lookup tool.
+
+1. Module 3 created the vector store in the portal without capturing its ID. Run this standalone
+   snippet from your working folder to list vector stores and find the Module 3 store by name:
+
+   ```python
+   import os
+
+   from azure.ai.projects import AIProjectClient
+   from azure.identity import DefaultAzureCredential
+   from dotenv import load_dotenv
+
+   load_dotenv()
+
+   with (
+       DefaultAzureCredential() as credential,
+       AIProjectClient(
+           endpoint=os.environ["PROJECT_ENDPOINT"], credential=credential
+       ) as project_client,
+       project_client.get_openai_client() as openai_client,
+   ):
+       for vector_store in openai_client.vector_stores.list():
+           print(vector_store.name, vector_store.id)
+   ```
+
+   Alternatively, open that vector store's page in the portal and copy its ID.
+
+2. Add the matching ID to your `.env` file:
+
+   ```text
+   FILE_SEARCH_VECTOR_STORE_ID=<your-Module-3-vector-store-ID>
+   ```
+
+3. Append these tool definitions to `client.py`, below `po_lookup_tool`:
+
+   ```python
+   file_search_tool = FileSearchTool(
+       vector_store_ids=[os.environ["FILE_SEARCH_VECTOR_STORE_ID"]]
+   )
+   code_interpreter_tool = CodeInterpreterTool(container=CodeInterpreterContainerAuto())
+   ```
 
 ### 6. Create a new agent version with the PO lookup tool
 
-Append the following to `client.py`. Notice the `tools=[...]` list — per the callout above, add
-your resolved File Search and Code Interpreter tool definitions alongside `po_lookup_tool`
-instead of passing `po_lookup_tool` alone:
+Append the following to `client.py`. The `tools=[...]` list includes all three tools:
 
 ```python
 with (
@@ -258,10 +302,8 @@ with (
             instructions=AGENT_INSTRUCTIONS,
             tools=[
                 po_lookup_tool,
-                # ⚠️ Add your existing File Search and Code Interpreter tool definitions
-                # here too — see the "Verify before running" callout above. Leaving only
-                # po_lookup_tool here will silently drop the other two tools for this
-                # agent version.
+                file_search_tool,
+                code_interpreter_tool,
             ],
         ),
     )
@@ -300,8 +342,14 @@ Step 6:
             extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}},
         )
 
-        for item in response.output:
-            if item.type == "function_call" and item.name == "lookup_po_by_number":
+        while any(item.type == "function_call" for item in response.output):
+            input_list = []
+            for item in response.output:
+                if item.type != "function_call":
+                    continue
+                if item.name != "lookup_po_by_number":
+                    raise ValueError(f"Unknown function tool: {item.name}")
+
                 result = lookup_po_by_number(**json.loads(item.arguments))
                 input_list.append(
                     FunctionCallOutput(
@@ -311,7 +359,6 @@ Step 6:
                     )
                 )
 
-        if input_list:
             response = openai_client.responses.create(
                 conversation=conversation.id,
                 input=input_list,
@@ -325,9 +372,10 @@ Step 6:
 > `openai_client.conversations.create()` / `openai_client.responses.create()` API surface — not
 > the older Assistants-style threads/runs API. The first `responses.create()` call can return
 > zero or more `function_call` items in `response.output`; you execute each one locally, append a
-> matching `FunctionCallOutput` to `input_list`, and only call `responses.create()` a second time
-> if there were any function calls to answer. Module 6 extends this exact loop to also handle MCP
-> tool-approval requests, so keep this structure intact.
+> matching `FunctionCallOutput` to `input_list`, and call `responses.create()` again. Repeat until
+> the latest response has no function calls, resetting `input_list` each round so outputs aren't
+> submitted twice. Module 6 extends this exact loop to also handle local MCP tool calls, so keep
+> this structure intact.
 
 ### 8. Run the client
 
@@ -366,8 +414,8 @@ Step 6:
    ```
 
    Confirm the agent calls `lookup_po_by_number`, compares $16.50 against the retrieved $14.80,
-   and cites the correct tolerance tier from policy Section 3.1 (this variance is a few cents
-   over 10%, well past the $250/5% escalate-to-Procurement threshold on 1000 units).
+   and cites the correct tolerance tier from policy Section 3.1 (this variance is about 11.5%,
+   well past the $250/5% escalate-to-Procurement threshold on 1000 units).
 
 6. Type `exit` to end the session.
 
@@ -383,7 +431,7 @@ Step 6:
   right policy tolerance tier.
 - [ ] You re-tested a Module 3 policy question and a Module 4 trend question against the new
   agent version, and both still work — confirming you didn't drop File Search or Code
-  Interpreter per the Step 5 callout.
+  Interpreter configured in Step 5.
 
 ## 🚀 Try it yourself
 
@@ -404,16 +452,16 @@ Confirm the agent calls your new tool and lists only that vendor's records.
   you're running `python client.py` from, and that `load_dotenv()` runs before you read
   `os.environ[...]`.
 - **`FileNotFoundError` reading `po-records.csv`:** Confirm `LAB_REPO_ROOT` in `.env` points at
-  the root of your local clone of *this* lab repository (the folder containing `lab/data/`), not
+  the root of your local clone of this repository (the folder directly containing `data/po-records.csv`), not
   your separate working folder from Module 0.
 - **Agent still refuses to look up a PO after Step 8:** Confirm `create_version` actually
   succeeded (check the printed confirmation message, and check **Agents** in the portal for a new
   version) and that `po_lookup_tool` is genuinely present in the `tools=[...]` list you ran, not
   just in an earlier draft of the file.
-- **Module 3/4 questions stop working after this module:** This is the exact failure mode called
-  out in the Step 5 "Verify before running" box — your `tools=[...]` list only included
-  `po_lookup_tool`, silently dropping File Search and/or Code Interpreter for this new version.
-  Add their tool definitions back into the same list and re-run `create_version`.
+- **Module 3/4 questions stop working after this module:** Confirm your `tools=[...]` list includes
+  `po_lookup_tool`, `file_search_tool`, and `code_interpreter_tool` as shown in Step 6, and that
+  `FILE_SEARCH_VECTOR_STORE_ID` matches the Module 3 store. Restore any missing definitions and
+  re-run `create_version`.
 - **`response.output` has no `function_call` items even when you ask for a PO lookup:** Double
   check the `FunctionTool`'s `parameters` schema matches exactly what you call in Python
   (`po_number`), and that `strict=True` isn't rejecting a malformed schema — a schema/behavior

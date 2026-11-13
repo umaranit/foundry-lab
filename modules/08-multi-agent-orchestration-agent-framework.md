@@ -1,4 +1,4 @@
-# Module 7: Multi-agent orchestration with Microsoft Agent Framework
+# Module 8: Multi-agent orchestration with Microsoft Agent Framework
 
 **Objective:** Define three specialized, code-first agents (price mismatch, duplicate invoice,
 missing PO) and a coordinator agent using the **Microsoft Agent Framework** SDK, wire them
@@ -13,7 +13,7 @@ the hosted **Invoice Discrepancy Assistant** agent itself — only on the data f
 environment you've already set up.
 
 > **A separate, code-first agent system — not a new version of the hosted agent.** Every module
-> so far (2 through 6) built and extended **one** server-hosted Prompt Agent called the
+> so far (2 through 6) built and extended **one** Prompt Agent called the
 > **Invoice Discrepancy Assistant**, configured first in the portal and then given new versions
 > from code. This module is different: you are going to define **brand-new agents entirely in
 > code**, using the Microsoft Agent Framework SDK, that exist only as Python objects in your
@@ -79,7 +79,7 @@ Confirm your `.env` contains:
 ```text
 PROJECT_ENDPOINT=https://<your-project-name>.<region>.ai.azure.com/api/projects/<project-name>
 MODEL_DEPLOYMENT=invoice-assistant-chat
-LAB_REPO_ROOT=C:\path\to\your\local\clone\of\this\lab
+LAB_REPO_ROOT=C:\path\to\your\local\clone
 ```
 
 ### 4. Reuse the PO lookup logic with the Agent Framework's `@tool` decorator
@@ -91,7 +91,7 @@ and a re-exposed version of the PO lookup function:
 """Multi-agent invoice discrepancy routing with the Microsoft Agent Framework.
 
 A separate, code-first agent system from the hosted Invoice Discrepancy Assistant built in
-Modules 2-6. A coordinator agent classifies each discrepancy query and hands off to exactly one
+Modules 2-7. A coordinator agent classifies each discrepancy query and hands off to exactly one
 specialist agent, using agent_framework.HandoffBuilder.
 """
 
@@ -109,7 +109,7 @@ from pydantic import Field
 
 load_dotenv()
 
-DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "lab" / "data"
+DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 PO_RECORDS_FILE = DATA_DIR / "po-records.csv"
 
 
@@ -143,7 +143,7 @@ def lookup_po_by_number(
 > a tool: `@tool(approval_mode="never_require")` plus `Annotated[..., Field(description=...)]`
 > instead of a hand-written `FunctionTool(..., parameters={...})` JSON schema. `
 > approval_mode="never_require"` tells the framework this tool is safe to call without pausing
-> for human approval — appropriate here since it's a read-only lookup, in contrast to Module 6's
+> for human approval — appropriate here since it's a read-only lookup, in contrast to Module 7's
 > MCP tool-approval loop for a different reason (a remote-style approval pattern that doesn't
 > apply to this local tool either).
 
@@ -166,7 +166,7 @@ it's a different client class belonging to the Agent Framework SDK.
 ### 6. Define the three specialist agents
 
 Each specialist's instructions embed the actual tolerance thresholds from the relevant section of
-[`data/invoice-po-policy.md`](/lab/data/invoice-po-policy.md) directly in the prompt. This is
+[`data/invoice-po-policy.md`](/data/invoice-po-policy.md) directly in the prompt. This is
 necessary because these are plain code-first agents with no File Search / knowledge-base grounding
 configured (unlike the hosted agent in Module 3) — if the policy isn't in the instructions, the
 agent has no way to know it.
@@ -418,7 +418,8 @@ the routing decision changes.
   checks the Azure CLI's signed-in session, so other credential sources (like a managed identity)
   won't help here even if they'd otherwise work.
 - **`FileNotFoundError` reading `po-records.csv`:** Confirm `LAB_REPO_ROOT` in `.env` points at
-  the root of your local clone of *this* lab repository, as in Module 5.
+  the root of your local clone of this repository (the folder directly containing
+  `data/po-records.csv`), as in Module 5.
 - **The coordinator hands off to the wrong specialist, or doesn't hand off at all:** Check that
   each specialist's `name=` in `Agent(...)` exactly matches the name the coordinator's
   instructions reference — `HandoffBuilder` matches handoff targets by participant name, so a

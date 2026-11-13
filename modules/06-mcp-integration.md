@@ -7,8 +7,8 @@ its tool as a `FunctionTool` on a new agent version, and extend the conversation
 
 > **Note:** This module adds a **local, stdio-based** MCP server — the kind you write and run
 > yourself as a subprocess. There is no `MCPTool` class and no approval step involved anywhere in
-> this module; those only apply to **remote** MCP servers accessed over HTTP, which this lab does
-> not cover. If you've seen the `MCPTool`/approval-request pattern elsewhere (for example in
+> this module; those only apply to **remote** MCP servers accessed over HTTP, as outlined in
+> [Module 7](07-foundry-iq-knowledge-base.md). If you've seen the `MCPTool`/approval-request pattern elsewhere (for example in
 > Foundry documentation about hosted remote MCP tools), set it aside for this module — it does
 > not apply here. See Step 6 below for exactly what does apply instead.
 
@@ -33,7 +33,7 @@ environment is activated.
 
 ### 2. Review the Section 8 escalation-contact table
 
-1. Open [`data/invoice-po-policy.md`](/lab/data/invoice-po-policy.md) and find **Section 8,
+1. Open [`data/invoice-po-policy.md`](/data/invoice-po-policy.md) and find **Section 8,
    "Escalation contact summary."** It's a small Markdown table with three columns: discrepancy
    type (for example `Price mismatch (Tier 2)` or `Missing PO (> $5,000)`), first escalation
    contact, and SLA.
@@ -57,7 +57,7 @@ from pathlib import Path
 
 from fastmcp import FastMCP
 
-POLICY_FILE = Path(os.environ["LAB_REPO_ROOT"]) / "lab" / "data" / "invoice-po-policy.md"
+POLICY_FILE = Path(os.environ["LAB_REPO_ROOT"]) / "data" / "invoice-po-policy.md"
 
 mcp = FastMCP(name="EscalationContacts")
 
@@ -164,7 +164,13 @@ import json
 import os
 
 from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import FunctionTool, PromptAgentDefinition
+from azure.ai.projects.models import (
+    CodeInterpreterContainerAuto,
+    CodeInterpreterTool,
+    FileSearchTool,
+    FunctionTool,
+    PromptAgentDefinition,
+)
 from azure.identity import DefaultAzureCredential
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
@@ -174,7 +180,8 @@ from openai.types.responses.response_input_param import FunctionCallOutput, Resp
 from functions import lookup_po_by_number
 ```
 
-Below `po_lookup_tool` (still at module level, unchanged from Module 5), add the MCP server
+Keep `po_lookup_tool`, `file_search_tool`, and `code_interpreter_tool` at module level, unchanged
+from Module 5 (including `FILE_SEARCH_VECTOR_STORE_ID` in `.env`). Below them, add the MCP server
 launch parameters:
 
 ```python
@@ -212,25 +219,15 @@ async def main():
                 FunctionTool(
                     name=t.name,
                     description=t.description,
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "discrepancy_type": {
-                                "type": "string",
-                                "description": (
-                                    "The discrepancy type exactly as it appears in policy "
-                                    "Section 8, e.g. 'Price mismatch (Tier 2)'."
-                                ),
-                            },
-                        },
-                        "required": ["discrepancy_type"],
-                        "additionalProperties": False,
-                    },
-                    strict=True,
+                    parameters=t.inputSchema,
+                    strict=False,
                 )
                 for t in tools
             ]
 ```
+
+Each function uses its own MCP input schema. `strict=False` preserves that schema without
+requiring it to satisfy the stricter FunctionTool schema constraints.
 
 > **No `MCPTool`, no approval step.** `functions_dict` and `mcp_function_tools` are the *entire*
 > MCP integration on the agent-definition side: each MCP tool becomes an ordinary `FunctionTool`
@@ -257,27 +254,17 @@ the `with` block that creates the new agent version — the same pattern as Modu
                         instructions=AGENT_INSTRUCTIONS,
                         tools=[
                             po_lookup_tool,
+                            file_search_tool,
+                            code_interpreter_tool,
                             *mcp_function_tools,
-                            # ⚠️ Add your existing File Search and Code Interpreter tool
-                            # definitions here too — see Module 5's "Verify before running"
-                            # callout. create_version replaces the entire tools=[...] list every
-                            # time, so the same rule from Module 5 applies again here: leaving
-                            # them out silently drops File Search and Code Interpreter for this
-                            # new version.
                         ],
                     ),
                 )
                 print(f"Updated agent '{agent.name}' with the escalation-contact MCP tool.")
 ```
 
-> ## ⚠️ Verify before running
->
-> This is the same warning as Module 5, Step 5 — it applies again here because `create_version`
-> still replaces the entire tool list. If your `tools=[...]` list here is only
-> `[po_lookup_tool, *mcp_function_tools]`, this new version drops File Search and Code Interpreter
-> and (if you didn't carry it over from Module 5) could also drop `po_lookup_tool` support for
-> Module 5's scenarios. Re-test Modules 3–5's questions after Step 9 below to confirm nothing
-> regressed.
+`create_version` replaces the entire tool list. The list above retains all three Module 5 tools
+and adds the MCP tools. Re-test Modules 3–5's questions after Step 9 to confirm nothing regressed.
 
 ### 8. Extend the conversation loop to call the MCP tool
 
@@ -306,29 +293,30 @@ Module 5, Step 7, but the function-call handling now dispatches to either the lo
                         extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}},
                     )
 
-                    for item in response.output:
-                        if item.type != "function_call":
-                            continue
+                    while any(item.type == "function_call" for item in response.output):
+                        input_list = []
+                        for item in response.output:
+                            if item.type != "function_call":
+                                continue
 
-                        kwargs = json.loads(item.arguments)
+                            kwargs = json.loads(item.arguments)
 
-                        if item.name == "lookup_po_by_number":
-                            result = lookup_po_by_number(**kwargs)
-                        elif item.name in functions_dict:
-                            output = await functions_dict[item.name](**kwargs)
-                            result = output.content[0].text
-                        else:
-                            continue
+                            if item.name == "lookup_po_by_number":
+                                result = lookup_po_by_number(**kwargs)
+                            elif item.name in functions_dict:
+                                output = await functions_dict[item.name](**kwargs)
+                                result = output.content[0].text
+                            else:
+                                raise ValueError(f"Unknown function tool: {item.name}")
 
-                        input_list.append(
-                            FunctionCallOutput(
-                                type="function_call_output",
-                                call_id=item.call_id,
-                                output=result,
+                            input_list.append(
+                                FunctionCallOutput(
+                                    type="function_call_output",
+                                    call_id=item.call_id,
+                                    output=result,
+                                )
                             )
-                        )
 
-                    if input_list:
                         response = openai_client.responses.create(
                             conversation=conversation.id,
                             input=input_list,
@@ -419,13 +407,13 @@ How many business days do we have to resolve a duplicate invoice escalation?
   you only call `asyncio.run(main())` once, at module level under `if __name__ == "__main__":`,
   and that you haven't also wrapped the script in another async runner.
 - **Escalation-contact answers look wrong or stale:** Confirm `LAB_REPO_ROOT` in `.env` (set in
-  Module 5) still points at the root of your local clone of *this* lab repository, so
+  Module 5) still points at the root of your local clone of this repository (the folder directly
+  containing `data/po-records.csv`), so
   `server.py` reads the same `invoice-po-policy.md` you reviewed in Step 2.
 - **Agent answers from memory instead of calling `get_escalation_contact`:** Confirm Step 5's
   instructions paragraph was actually added, and that the discrepancy-type phrase in your question
   reasonably matches a Section 8 row — an unrecognized phrase may lead the model to answer
   generically instead of calling the tool.
-- **Module 3/4/5 questions stop working after this module:** This is the same failure mode called
-  out in the Step 7 "Verify before running" box — your `tools=[...]` list didn't carry over
-  `po_lookup_tool` and/or the File Search and Code Interpreter tool definitions from Module 5.
-  Add them back into the same list and re-run `client.py`.
+- **Module 3/4/5 questions stop working after this module:** Confirm your `tools=[...]` list includes
+  `po_lookup_tool`, `file_search_tool`, `code_interpreter_tool`, and `*mcp_function_tools` as shown
+  in Step 7. Restore any missing definitions from Module 5 and re-run `client.py`.

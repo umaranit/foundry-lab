@@ -22,10 +22,9 @@ model selection and deployment options available in the portal.
    - **Region:** the region you confirmed has model quota in Module 0, e.g. `eastus2`
 4. Select **Create** and wait for the project to finish provisioning (usually under a minute).
 
-> **Note:** Depending on your Foundry portal version, you may be prompted to create a project
-> directly, or to first create (or select) a **hub** and then a project within it. Either flow
-> is fine for this lab — the rest of these steps assume you've landed on a project's overview
-> page.
+> **Note:** Labels and navigation may differ between versions of the New Foundry experience.
+> This lab uses New Foundry throughout; the rest of these steps assume you've landed on a
+> project's overview page.
 
 ### 2. Tour the project overview
 
@@ -67,7 +66,7 @@ Before moving on, make sure you can explain the difference between:
 - **Global vs. regional** deployment options, where available, and how they affect data
   residency and latency.
 - **Model versioning** — new model versions are released over time; you can pin a specific
-  version or take automatic updates, which matters for reproducibility in evaluation (Module 8).
+  version or take automatic updates, which matters for reproducibility in evaluation (Module 10).
 
 ### 6. Verify the deployment
 

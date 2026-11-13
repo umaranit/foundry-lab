@@ -108,7 +108,7 @@ Set-Location "$HOME\invoice-discrepancy-assistant"
 
 This lab uses three sample data files — a policy document, a PO records CSV, and an evaluation
 dataset — starting in Module 3. You don't need to create or download anything yet; see
-[data/README.md](/lab/data/README.md) for what each file will contain and which module
+[data/README.md](/data/README.md) for what each file will contain and which module
 introduces it.
 
 ## ✅ Checkpoint / Validate

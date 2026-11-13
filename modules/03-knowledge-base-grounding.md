@@ -5,13 +5,13 @@ answers in it using File Search / Foundry IQ, understanding indexing and citatio
 
 **Estimated duration:** 30 minutes
 
-**Prerequisites:** Module 2 complete — the **Invoice Discrepancy Assistant** hosted Prompt Agent
+**Prerequisites:** Module 2 complete — the **Invoice Discrepancy Assistant** Prompt Agent
 exists and responds to general discrepancy questions in the playground, but cannot yet answer
 policy-specific questions (for example, exact tolerance thresholds) or look up PO data.
 
 ## 1. Review the policy document
 
-1. Open [`data/invoice-po-policy.md`](/lab/data/invoice-po-policy.md) in VS Code.
+1. Open [`data/invoice-po-policy.md`](/data/invoice-po-policy.md) in VS Code.
 2. Skim its structure — this is Contoso Finance's (fictional) accounts-payable policy, and is the
    single source of truth the agent should ground its discrepancy-handling answers in:
    - Section 3 — **price mismatch** tolerance thresholds and escalation.

@@ -1,4 +1,4 @@
-# Module 8: Evaluation
+# Module 10: Evaluation
 
 **Objective:** Capture real responses from the hosted **Invoice Discrepancy Assistant** against a
 seed set of discrepancy queries, then run a Foundry cloud evaluation with the verified built-in
@@ -23,7 +23,7 @@ and virtual environment from Module 0 are still in place.
 
 ### 1. Review the seed dataset
 
-1. Open [`data/discrepancy-eval-seed.jsonl`](/lab/data/discrepancy-eval-seed.jsonl) in VS Code.
+1. Open [`data/discrepancy-eval-seed.jsonl`](/data/discrepancy-eval-seed.jsonl) in VS Code.
 2. Note the shape: one JSON object per line, each with exactly two fields, `query` and
    `ground_truth` — for example:
 
@@ -33,7 +33,7 @@ and virtual environment from Module 0 are still in place.
 
 3. Note the coverage: all four discrepancy types (price mismatch, quantity mismatch, duplicate
    invoice, missing PO) across their different tolerance tiers from
-   [`invoice-po-policy.md`](/lab/data/invoice-po-policy.md), plus two "trick" rows — one where the
+   [`invoice-po-policy.md`](/data/invoice-po-policy.md), plus two "trick" rows — one where the
    invoice matches the PO exactly (no discrepancy at all) and one that tests the Section 7
    approval-authority limits rather than a discrepancy tolerance — and one row that exercises the
    Module 6 `get_escalation_contact` tool directly.
@@ -48,10 +48,10 @@ and virtual environment from Module 0 are still in place.
 
 ### 2. Decide what's under test (no new installs needed)
 
-1. This module evaluates the Module 6 hosted **Invoice Discrepancy Assistant** — not the Module 7
+1. This module evaluates the Module 6 hosted **Invoice Discrepancy Assistant** — not the Module 8
    Agent Framework orchestrator. The hosted agent already has grounding and both tools, and the
    capture script in Step 3 reuses the Module 5/6 `conversations`/`responses` client pattern
-   directly. Evaluating the Module 7 orchestrator instead would mean adapting the capture step to
+   directly. Evaluating the Module 8 orchestrator instead would mean adapting the capture step to
    its different (non-`conversations`/`responses`) invocation pattern, which this module doesn't
    cover.
 2. Every package this module needs — `azure-ai-projects`, `azure-identity`, `openai`,
@@ -99,7 +99,7 @@ load_dotenv()
 project_endpoint = os.environ["PROJECT_ENDPOINT"]
 AGENT_NAME = "Invoice Discrepancy Assistant"
 
-DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "lab" / "data"
+DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 SEED_FILE = DATA_DIR / "discrepancy-eval-seed.jsonl"
 DATASET_FILE = DATA_DIR / "discrepancy-eval-dataset.jsonl"
 
@@ -142,25 +142,26 @@ async def capture_response(openai_client, functions_dict, agent_name: str, query
         extra_body={"agent_reference": {"name": agent_name, "type": "agent_reference"}},
     )
 
-    for item in response.output:
-        if item.type != "function_call":
-            continue
+    while any(item.type == "function_call" for item in response.output):
+        input_list = []
+        for item in response.output:
+            if item.type != "function_call":
+                continue
 
-        kwargs = json.loads(item.arguments)
+            kwargs = json.loads(item.arguments)
 
-        if item.name == "lookup_po_by_number":
-            result = lookup_po_by_number(**kwargs)
-        elif item.name in functions_dict:
-            output = await functions_dict[item.name](**kwargs)
-            result = output.content[0].text
-        else:
-            continue
+            if item.name == "lookup_po_by_number":
+                result = lookup_po_by_number(**kwargs)
+            elif item.name in functions_dict:
+                output = await functions_dict[item.name](**kwargs)
+                result = output.content[0].text
+            else:
+                raise ValueError(f"Unknown function tool: {item.name}")
 
-        input_list.append(
-            FunctionCallOutput(type="function_call_output", call_id=item.call_id, output=result)
-        )
+            input_list.append(
+                FunctionCallOutput(type="function_call_output", call_id=item.call_id, output=result)
+            )
 
-    if input_list:
         response = openai_client.responses.create(
             conversation=conversation.id,
             input=input_list,
@@ -235,8 +236,8 @@ if __name__ == "__main__":
    ```
 
 2. Confirm the counter reaches `Captured 15/15 responses` and the script prints
-   `Wrote 15 rows to ...\lab\data\discrepancy-eval-dataset.jsonl`.
-3. Open [`data/discrepancy-eval-dataset.jsonl`](/lab/data/discrepancy-eval-dataset.jsonl) (it's
+   `Wrote 15 rows to ...\data\discrepancy-eval-dataset.jsonl`.
+3. Open [`data/discrepancy-eval-dataset.jsonl`](/data/discrepancy-eval-dataset.jsonl) (it's
    generated next to the seed file) and spot-check two or three rows — each should now have
    `query`, `response`, and `ground_truth`, with `response` containing the agent's real answer
    text, not a placeholder.
@@ -273,7 +274,7 @@ model_deployment_name = os.environ["MODEL_DEPLOYMENT"]
 dataset_name = "invoice-discrepancy-eval-dataset"
 dataset_version = "1"
 
-dataset_path = Path(os.environ["LAB_REPO_ROOT"]) / "lab" / "data" / "discrepancy-eval-dataset.jsonl"
+dataset_path = Path(os.environ["LAB_REPO_ROOT"]) / "data" / "discrepancy-eval-dataset.jsonl"
 
 if not dataset_path.exists():
     print(f"ERROR: {dataset_path} not found. Run capture_responses.py first.")
@@ -381,7 +382,14 @@ def create_evaluation_definition():
 > addressed the question. `groundedness` additionally needs something to check the response
 > *against*; this dataset has no separate retrieved-context field, so the expected answer
 > (`ground_truth`) doubles as that reference context. This is the same mapping the verified
-> reference script uses.
+> reference script uses. **This measures answer-vs-reference similarity, not true
+> retrieval-groundedness in the strict sense:** the evaluator compares the answer with the
+> expected answer, not with the actual policy text/citations the agent retrieved via File Search.
+> This is a known simplification for this lab; a high score does not prove that the agent
+> retrieved the right evidence or faithfully used it. A production evaluation pipeline should
+> capture the agent's actual retrieved context/citations per query and supply that retrieved
+> context to the groundedness evaluator, keeping `ground_truth` separate for reference-answer
+> comparisons. The verified code and mapping remain unchanged for this exercise.
 
 ### 8. Start the run and poll for completion
 
@@ -517,9 +525,10 @@ just a number to note and move past:
 - Low **relevance** → the agent may be answering a nearby but different question (for example,
   explaining a policy section generally instead of applying it to the specific numbers in the
   query) — again, usually an instructions issue (Module 2).
-- Low **groundedness** → the agent's answer may not match the policy document at all, which
-  points at File Search / grounding (Module 3), or at a tool giving the model wrong data
-  (Modules 5–6) that it then reported confidently.
+- Low **groundedness** → in this lab's mapping, the answer differs from the reference answer.
+  Inspect the reference, the policy, actual retrieval evidence (Module 3), and tool outputs
+  (Modules 5–6) before attributing the score to a retrieval or tool failure; this score alone
+  does not measure whether the answer is supported by the context actually retrieved.
 
 ## ✅ Checkpoint / Validate
 

@@ -1,17 +1,17 @@
-# Module 9: Monitoring & Tracing
+# Module 11: Monitoring & Tracing
 
 **Objective:** Instrument the hosted **Invoice Discrepancy Assistant** with Azure Monitor
 OpenTelemetry so every model call is traced automatically, wrap each test query in one
 manually-created parent span carrying duration and token attributes, and read the resulting
-cost/latency picture back in the Foundry portal — then confirm the Module 7 Agent Framework
+cost/latency picture back in the Foundry portal — then confirm the Module 8 Agent Framework
 agents show up in the same place with no comparable instrumentation effort.
 
 **Estimated duration:** 40 minutes
 
-**Prerequisites:** Modules 6–8 complete — the hosted **Invoice Discrepancy Assistant** has the
+**Prerequisites:** Modules 6–10 complete — the hosted **Invoice Discrepancy Assistant** has the
 `lookup_po_by_number` function tool and the `get_escalation_contact` MCP tool (Module 6),
-`agent_framework_workflow.py` runs successfully (Module 7), `discrepancy-eval-seed.jsonl` exists
-(Module 8), and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`) and
+`agent_framework_workflow.py` runs successfully (Module 8), `discrepancy-eval-seed.jsonl` exists
+(Module 10), and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`) and
 virtual environment from Module 0 are still in place.
 
 > **Scope note:** this module's telemetry bootstrap — `configure_azure_monitor` plus
@@ -39,7 +39,7 @@ virtual environment from Module 0 are still in place.
    .\.venv\Scripts\Activate.ps1
    ```
 
-2. Install the two packages this module adds on top of everything installed in Modules 5–7:
+2. Install the two packages this module adds on top of everything installed in Modules 5–8:
 
    ```powershell
    pip install azure-monitor-opentelemetry opentelemetry-instrumentation-openai-v2
@@ -75,7 +75,7 @@ the imports:
 ```python
 """Trace Invoice Discrepancy Assistant runs with Azure Monitor OpenTelemetry.
 
-Builds on Module 8's capture_responses.py conversation-per-query loop against the Module 6
+Builds on Module 10's capture_responses.py conversation-per-query loop against the Module 6
 hosted agent (including the local lookup_po_by_number dispatch and the MCP
 get_escalation_contact dispatch). OpenAIInstrumentor auto-creates a child span for every
 underlying model call with no extra code; this script additionally wraps each query in one
@@ -106,7 +106,7 @@ load_dotenv()
 project_endpoint = os.environ["PROJECT_ENDPOINT"]
 AGENT_NAME = "Invoice Discrepancy Assistant"
 
-DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "lab" / "data"
+DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 SEED_FILE = DATA_DIR / "discrepancy-eval-seed.jsonl"
 SAMPLE_SIZE = 3  # keep this demo quick; raise to len(seed rows) to trace the whole seed set
 
@@ -132,7 +132,7 @@ tracer = trace.get_tracer(__name__)
 ### 4. Load the sample queries and build the per-query traced request function
 
 Append the seed-loading helper and the traced request function to `tracing_demo.py`. This reuses
-Module 8's `capture_response` conversation-per-query loop almost unchanged — the difference is
+Module 10's `capture_response` conversation-per-query loop almost unchanged — the difference is
 the `tracer.start_as_current_span(...)` block wrapped around it, and the custom attributes
 attached once the response comes back:
 
@@ -169,25 +169,26 @@ async def run_traced_query(openai_client, functions_dict, index: int, query: str
             extra_body={"agent_reference": {"name": AGENT_NAME, "type": "agent_reference"}},
         )
 
-        for item in response.output:
-            if item.type != "function_call":
-                continue
+        while any(item.type == "function_call" for item in response.output):
+            input_list = []
+            for item in response.output:
+                if item.type != "function_call":
+                    continue
 
-            kwargs = json.loads(item.arguments)
+                kwargs = json.loads(item.arguments)
 
-            if item.name == "lookup_po_by_number":
-                result = lookup_po_by_number(**kwargs)
-            elif item.name in functions_dict:
-                output = await functions_dict[item.name](**kwargs)
-                result = output.content[0].text
-            else:
-                continue
+                if item.name == "lookup_po_by_number":
+                    result = lookup_po_by_number(**kwargs)
+                elif item.name in functions_dict:
+                    output = await functions_dict[item.name](**kwargs)
+                    result = output.content[0].text
+                else:
+                    raise ValueError(f"Unknown function tool: {item.name}")
 
-            input_list.append(
-                FunctionCallOutput(type="function_call_output", call_id=item.call_id, output=result)
-            )
+                input_list.append(
+                    FunctionCallOutput(type="function_call_output", call_id=item.call_id, output=result)
+                )
 
-        if input_list:
             response = openai_client.responses.create(
                 conversation=conversation.id,
                 input=input_list,
@@ -217,7 +218,7 @@ async def run_traced_query(openai_client, functions_dict, index: int, query: str
         print(f"[{index}] RESPONSE: {response.output_text}")
 ```
 
-> **One conversation per query, same reason as Module 8:** each sample query should measure the
+> **One conversation per query, same reason as Module 10:** each sample query should measure the
 > agent answering cold, not building on a prior query's context, so this opens a brand-new
 > `conversation` every call — identical to `capture_responses.py`.
 
@@ -260,7 +261,7 @@ if __name__ == "__main__":
 
 2. Confirm you see three `[1]`/`[2]`/`[3]` blocks, each printing its query, a duration in seconds,
    a token line (if `usage` was populated), and the agent's response text. This is the same
-   per-query console output style as Module 8's `capture_responses.py`, just for three rows
+   per-query console output style as Module 10's `capture_responses.py`, just for three rows
    instead of fifteen, and now instrumented.
 3. Wait a minute or two for Application Insights ingestion — traces don't always appear
    instantly in the portal views in the next steps.
@@ -271,7 +272,7 @@ if __name__ == "__main__":
 2. In the left navigation, select **Monitoring**.
 3. Select **Resource usage** to see a summary of model interactions.
 4. Confirm you can see, for the three calls you just made:
-   - **Total requests** — should include your three (plus any earlier Module 5–8 traffic if
+   - **Total requests** — should include your three (plus any earlier Module 5–10 traffic if
      Application Insights was already connected then).
    - **Total token count**, **prompt/input token count**, and **completion/output token count** —
      compare these against the `[index] TOKENS: ...` lines your script printed.
@@ -298,15 +299,15 @@ if __name__ == "__main__":
    (your custom query span, then the auto-instrumented model-call span beneath it), viewed in the
    portal instead of a terminal.
 
-### 8. Confirm the Module 7 Agent Framework spans show up too
+### 8. Confirm the Module 8 Agent Framework spans show up too
 
 1. Recall the facilitator note from earlier planning: the Microsoft Agent Framework SDK used in
-   Module 7 emits OpenTelemetry spans **natively** — every agent run and handoff already creates
+   Module 8 emits OpenTelemetry spans **natively** — every agent run and handoff already creates
    its own spans through the standard `opentelemetry` API, the same API this module used directly
    in Step 4. The only thing missing for those spans to reach Application Insights is an exporter
    pointed at your project's connection string, which is exactly what `configure_azure_monitor`
    sets up as the *global* tracer provider for the whole process — not just for this script.
-2. Open your existing `agent_framework_workflow.py` from Module 7 and temporarily add the same
+2. Open your existing `agent_framework_workflow.py` from Module 8 and temporarily add the same
    two-line telemetry bootstrap near the top (after its existing imports, before the chat client
    and agents are constructed), reusing the same connection string call:
 
@@ -332,16 +333,16 @@ if __name__ == "__main__":
    workflow and the specialist agent it handed off to) instead of your custom `invoice_query_*`
    names.
 5. Revert the two lines you added to `agent_framework_workflow.py` once you're done confirming
-   this, so Module 7's file matches what that module describes again.
+   this, so Module 8's file matches what that module describes again.
 
-### 9. Connect what you're seeing back to Module 8
+### 9. Connect what you're seeing back to Module 10
 
-Module 8 ran these same kinds of queries through the built-in evaluators and produced a quality
+Module 10 ran these same kinds of queries through the built-in evaluators and produced a quality
 score — `intent_resolution`, `relevance`, `groundedness` — per row. This module ran a small sample
 of the same seed queries through the same hosted agent and produced a *cost and latency* profile
 for each one instead. Neither view is complete on its own: a response can score well on
 `groundedness` while taking 8 seconds and consuming several thousand tokens, or respond in under a
-second while being ungrounded. Treat the Module 8 evaluation scores and this module's
+second while being ungrounded. Treat the Module 10 evaluation scores and this module's
 duration/token attributes as two lenses on the same underlying runs, not two unrelated exercises —
 a production monitoring setup would want both before shipping a prompt or agent change.
 
@@ -359,7 +360,7 @@ a production monitoring setup would want both before shipping a prompt or agent 
   nested underneath it.
 - [ ] After temporarily adding the two-line telemetry bootstrap to `agent_framework_workflow.py`
   and running it, a new trace for that run appears in the same **Traces** tab, confirming Module
-  7's agents are traced with no `OpenAIInstrumentor`/manual-span work required.
+  8's agents are traced with no `OpenAIInstrumentor`/manual-span work required.
 
 ## 🚀 Try it yourself
 
@@ -382,7 +383,7 @@ full set — does it correspond to a query that needed a tool call (`lookup_po_b
   re-check that `configure_azure_monitor(connection_string=...)` ran (no exception at startup)
   and that the connection string came from the same project you're viewing in the portal.
 - **`tracing_demo.py` hangs after printing nothing:** The same MCP-subprocess cause as Modules 6
-  and 8 — confirm `python server.py` still runs cleanly on its own from the same activated-venv
+  and 9 — confirm `python server.py` still runs cleanly on its own from the same activated-venv
   terminal.
 - **Token attributes never show up on any parent span:** `usage` may not be populated on every
   Responses API object shape this lab uses — the `getattr(response, "usage", None)` guard in
@@ -397,4 +398,4 @@ full set — does it correspond to a query that needed a tool call (`lookup_po_b
   reference for building a local trace viewer for your own project.
 - **Forgot to revert the two lines added to `agent_framework_workflow.py` in Step 8:** harmless to
   leave in (it just re-points the same exporter at the same resource every run), but remove them
-  if you want that file to match Module 7's description exactly again.
+  if you want that file to match Module 8's description exactly again.
