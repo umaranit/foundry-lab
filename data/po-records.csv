@@ -1,0 +1,19 @@
+po_number,vendor_name,item_description,unit_price,quantity,order_date,status
+PO-10201,Adatum Packaging Co.,Corrugated shipping boxes (18x18x18),2.15,500,2026-01-05,Open
+PO-10205,Fabrikam Industrial Supply,Stainless steel hex bolts (1/4-20),0.42,2000,2026-01-08,Closed - Fully Invoiced
+PO-10212,Proseware Equipment Rentals,Scissor lift rental (weekly),450.00,2,2026-01-12,Open
+PO-10218,Northwind Traders,Office desk chairs (ergonomic),189.99,25,2026-01-15,Partially Received
+PO-10222,Wingtip Office Supplies,Multipurpose copy paper (case),38.50,60,2026-01-20,Closed - Fully Invoiced
+PO-10226,VanArsdel Logistics,Freight pallet shipping (LTL),310.00,12,2026-01-22,Open
+PO-10230,Tailwind Traders,Branded polo shirts (embroidered),24.75,150,2026-01-25,Closed - Fully Invoiced
+PO-10234,Litware Manufacturing,CNC-machined aluminum brackets,14.80,1000,2026-01-28,Open
+PO-10238,Adatum Packaging Co.,Stretch wrap film (80 gauge),56.20,100,2026-02-02,Open
+PO-10241,Fabrikam Industrial Supply,Galvanized steel brackets,3.75,800,2026-02-05,Partially Received
+PO-10245,Proseware Equipment Rentals,Forklift rental (monthly),1850.00,1,2026-02-09,Open
+PO-10249,Northwind Traders,Standing desks (electric),425.00,15,2026-02-12,Closed - Fully Invoiced
+PO-10253,Wingtip Office Supplies,Toner cartridges (black, high-yield),68.40,40,2026-02-16,Open
+PO-10257,VanArsdel Logistics,Refrigerated transport (per load),980.00,6,2026-02-20,Open
+PO-10261,Tailwind Traders,Safety vests (hi-vis, class 2),11.25,300,2026-02-24,Closed - Fully Invoiced
+PO-10265,Litware Manufacturing,Injection-molded enclosures,22.90,500,2026-02-27,Partially Received
+PO-10269,Adatum Packaging Co.,Custom printed mailers,1.85,3000,2026-03-03,Open
+PO-10273,Fabrikam Industrial Supply,Ball bearings (sealed, 6205),4.60,1200,2026-03-06,Cancelled

@@ -1,0 +1,82 @@
+date,discrepancy_type,vendor_name,amount,resolution_status
+2026-01-11,Quantity Mismatch,Adatum Packaging Co.,878.52,Escalated - Requisitioner
+2026-01-13,Missing PO,Fabrikam Industrial Supply,198.80,Retroactive PO Issued
+2026-01-17,Price Mismatch,Adatum Packaging Co.,9.59,Auto-Approved
+2026-01-17,Quantity Mismatch,Fabrikam Industrial Supply,54.08,Auto-Approved
+2026-01-23,Price Mismatch,Proseware Equipment Rentals,225.85,Supervisor Approved
+2026-01-30,Duplicate Invoice,Proseware Equipment Rentals,801.87,Rejected
+2026-02-04,Price Mismatch,Adatum Packaging Co.,11.38,Auto-Approved
+2026-02-06,Missing PO,Fabrikam Industrial Supply,495.39,Retroactive PO Issued
+2026-02-09,Missing PO,Northwind Traders,12373.77,Rejected
+2026-02-10,Price Mismatch,Wingtip Office Supplies,21.70,Auto-Approved
+2026-02-12,Duplicate Invoice,VanArsdel Logistics,12847.13,Cleared - Not Duplicate
+2026-02-22,Duplicate Invoice,Tailwind Traders,10092.21,Pending Vendor Response
+2026-02-23,Duplicate Invoice,Tailwind Traders,9578.98,Rejected
+2026-03-01,Quantity Mismatch,Fabrikam Industrial Supply,97.00,Auto-Approved
+2026-03-17,Quantity Mismatch,Fabrikam Industrial Supply,808.48,Escalated - Requisitioner
+2026-03-28,Price Mismatch,Northwind Traders,80.86,Supervisor Approved
+2026-03-28,Missing PO,Proseware Equipment Rentals,202.68,Retroactive PO Issued
+2026-03-29,Duplicate Invoice,Northwind Traders,9568.48,Pending Vendor Response
+2026-03-30,Price Mismatch,Proseware Equipment Rentals,15.64,Auto-Approved
+2026-04-08,Duplicate Invoice,Fabrikam Industrial Supply,8562.27,Rejected
+2026-04-09,Quantity Mismatch,Fabrikam Industrial Supply,474.97,Escalated - Requisitioner
+2026-04-17,Duplicate Invoice,Fabrikam Industrial Supply,7192.20,Pending Vendor Response
+2026-04-20,Price Mismatch,Proseware Equipment Rentals,120.56,Supervisor Approved
+2026-04-21,Quantity Mismatch,Fabrikam Industrial Supply,2038.73,Escalated - Requisitioner
+2026-04-30,Missing PO,Adatum Packaging Co.,371.45,Retroactive PO Issued
+2026-05-02,Missing PO,Fabrikam Industrial Supply,318.86,Retroactive PO Issued
+2026-05-04,Missing PO,Adatum Packaging Co.,4839.67,Pending Vendor Response
+2026-05-11,Price Mismatch,Fabrikam Industrial Supply,23.04,Auto-Approved
+2026-05-17,Duplicate Invoice,VanArsdel Logistics,12495.18,Rejected
+2026-06-02,Duplicate Invoice,Wingtip Office Supplies,14672.41,Pending Vendor Response
+2026-06-04,Quantity Mismatch,Proseware Equipment Rentals,186.02,Escalated - Requisitioner
+2026-06-05,Price Mismatch,Litware Manufacturing,218.89,Supervisor Approved
+2026-06-07,Quantity Mismatch,VanArsdel Logistics,491.40,Escalated - Requisitioner
+2026-06-08,Quantity Mismatch,Proseware Equipment Rentals,372.80,Escalated - Requisitioner
+2026-06-10,Quantity Mismatch,Wingtip Office Supplies,80.45,Auto-Approved
+2026-06-11,Price Mismatch,Adatum Packaging Co.,121.97,Supervisor Approved
+2026-06-14,Price Mismatch,Litware Manufacturing,24.96,Auto-Approved
+2026-06-21,Quantity Mismatch,Tailwind Traders,56.17,Auto-Approved
+2026-06-22,Price Mismatch,Litware Manufacturing,12.19,Auto-Approved
+2026-06-23,Missing PO,Tailwind Traders,10869.87,Rejected
+2026-06-28,Missing PO,Fabrikam Industrial Supply,497.87,Retroactive PO Issued
+2026-07-02,Duplicate Invoice,Litware Manufacturing,14977.00,Cleared - Not Duplicate
+2026-07-02,Missing PO,Proseware Equipment Rentals,4692.97,Retroactive PO Issued
+2026-07-06,Duplicate Invoice,Adatum Packaging Co.,6358.07,Pending Vendor Response
+2026-07-08,Price Mismatch,Fabrikam Industrial Supply,1066.79,Escalated - Procurement
+2026-07-08,Quantity Mismatch,Tailwind Traders,698.63,Escalated - Requisitioner
+2026-07-09,Missing PO,VanArsdel Logistics,129.41,Retroactive PO Issued
+2026-07-10,Price Mismatch,Adatum Packaging Co.,16.25,Auto-Approved
+2026-07-10,Missing PO,Adatum Packaging Co.,1096.92,Retroactive PO Issued
+2026-07-12,Quantity Mismatch,VanArsdel Logistics,233.88,Escalated - Requisitioner
+2026-07-13,Price Mismatch,Northwind Traders,15.20,Auto-Approved
+2026-07-14,Quantity Mismatch,Fabrikam Industrial Supply,61.40,Auto-Approved
+2026-07-28,Quantity Mismatch,Wingtip Office Supplies,1114.86,Escalated - Requisitioner
+2026-07-31,Quantity Mismatch,Fabrikam Industrial Supply,1641.01,Escalated - Requisitioner
+2026-08-05,Quantity Mismatch,Fabrikam Industrial Supply,998.92,Escalated - Requisitioner
+2026-08-08,Duplicate Invoice,Litware Manufacturing,13943.79,Cleared - Not Duplicate
+2026-08-10,Duplicate Invoice,Fabrikam Industrial Supply,6009.29,Pending Vendor Response
+2026-08-19,Quantity Mismatch,Fabrikam Industrial Supply,464.55,Escalated - Requisitioner
+2026-08-29,Price Mismatch,Wingtip Office Supplies,19.11,Auto-Approved
+2026-08-30,Price Mismatch,Fabrikam Industrial Supply,14.92,Auto-Approved
+2026-09-04,Quantity Mismatch,Northwind Traders,71.65,Auto-Approved
+2026-09-05,Duplicate Invoice,Tailwind Traders,4000.19,Pending Vendor Response
+2026-09-08,Price Mismatch,Fabrikam Industrial Supply,792.92,Escalated - Procurement
+2026-09-08,Missing PO,Proseware Equipment Rentals,4942.56,Pending Vendor Response
+2026-09-09,Quantity Mismatch,Fabrikam Industrial Supply,532.93,Escalated - Requisitioner
+2026-09-10,Quantity Mismatch,Litware Manufacturing,252.73,Escalated - Requisitioner
+2026-09-13,Quantity Mismatch,Fabrikam Industrial Supply,1590.93,Escalated - Requisitioner
+2026-09-21,Price Mismatch,Northwind Traders,13.77,Auto-Approved
+2026-10-03,Quantity Mismatch,Wingtip Office Supplies,47.47,Auto-Approved
+2026-10-05,Quantity Mismatch,VanArsdel Logistics,220.09,Escalated - Requisitioner
+2026-10-09,Price Mismatch,Tailwind Traders,955.55,Escalated - Procurement
+2026-10-10,Price Mismatch,Tailwind Traders,186.75,Supervisor Approved
+2026-10-10,Duplicate Invoice,VanArsdel Logistics,3642.65,Rejected
+2026-10-11,Quantity Mismatch,Adatum Packaging Co.,442.72,Escalated - Requisitioner
+2026-10-12,Missing PO,VanArsdel Logistics,384.09,Retroactive PO Issued
+2026-10-14,Price Mismatch,Proseware Equipment Rentals,730.63,Escalated - Procurement
+2026-10-17,Quantity Mismatch,Wingtip Office Supplies,174.75,Escalated - Requisitioner
+2026-10-18,Quantity Mismatch,Northwind Traders,39.16,Escalated - Receiving
+2026-10-22,Missing PO,Wingtip Office Supplies,3514.91,Pending Vendor Response
+2026-10-24,Quantity Mismatch,Tailwind Traders,38.92,Auto-Approved
+2026-11-05,Duplicate Invoice,VanArsdel Logistics,6166.90,Pending Vendor Response
