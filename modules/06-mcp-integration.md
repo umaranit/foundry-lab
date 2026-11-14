@@ -19,6 +19,20 @@ Module 0 working folder, the **Invoice Discrepancy Assistant** agent has a versi
 `lookup_po_by_number` `FunctionTool` (plus File Search and Code Interpreter), and your virtual
 environment is activated.
 
+## Why this module?
+
+- **Where we are:** Module 5 added a PO lookup implemented directly in our Python client.
+- **What's missing:** We have not learned how to expose a tool through a separate server and
+  a standard protocol. Policy retrieval can already answer contact questions, but it is not a
+  dedicated structured contact lookup.
+- **What we'll add:** A FastMCP server exposing escalation contacts and SLAs from policy
+  Section 8, plus an async client connection that forwards tool requests to that server.
+- **Where it runs:** The client and MCP server both run on your computer, communicating over
+  stdin/stdout. Foundry sees a `FunctionTool`; your client bridges it to MCP. This is neither
+  Azure Functions nor a remote HTTP MCP endpoint, and it has no MCP approval-request loop.
+- **By the end:** Asking who handles a particular discrepancy and within what SLA should
+  execute the MCP lookup and return the policy table's values, alongside the existing PO tool.
+
 ## Steps
 
 ### 1. Install the MCP packages

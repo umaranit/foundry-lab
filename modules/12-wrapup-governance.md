@@ -9,6 +9,22 @@ up the Azure/Foundry resources created during the lab, and point to further lear
 cleanup pass over everything built so far, not new code. You'll need access to the Azure
 portal/CLI and the Foundry portal with the permissions you confirmed in Module 0.
 
+## Why this module?
+
+- **Where we are:** We have built and tested agent capabilities, explored an alternative
+  architecture and hosting, and collected quality and runtime evidence.
+- **What's missing:** A working lab is not a production governance plan. Resource ownership,
+  ongoing charges, sensitive-data handling, and human approval responsibilities still matter
+  after the demonstrations finish.
+- **What we'll add:** A review of costs and responsible-AI boundaries, a cleanup pass, and
+  next-step learning paths. No new agent capability or deployment is introduced here.
+- **Where it runs:** You review and clean up cloud resources through the Azure/Foundry portals
+  or CLI, and stop local lab processes on your computer. Confirm ownership before deleting
+  anything shared with other participants.
+- **By the end:** You can explain what each architecture demonstrated, which financial
+  decisions must remain human-owned, and which resources were removed or intentionally
+  retained. Evaluation and tracing support those decisions; they do not replace governance.
+
 ## Steps
 
 ### 1. Recap what you built
@@ -19,7 +35,7 @@ anything down, it's worth seeing the whole system in one place:
 | # | Module | What you built |
 |---|--------|-----------------|
 | 0 | [Prerequisites](/modules/00-prerequisites.md) | Confirmed Azure/Foundry access, model quota, VS Code + Foundry Toolkit, Python 3.13, and Git. |
-| 1 | [Foundry project & model setup](/modules/01-foundry-project-and-model-setup.md) | Created the `invoice-discrepancy-assistant` Foundry project and deployed the `invoice-assistant-chat` chat model. |
+| 1 | [Foundry project & model setup](/modules/01-foundry-project-and-model-setup.md) | Created the `foundry-practice-project` Foundry project and deployed the `invoice-assistant-chat` chat model. |
 | 2 | [Build the agent (portal)](/modules/02-build-the-agent-portal.md) | Created the **Invoice Discrepancy Assistant** Prompt Agent with system instructions tying its behavior to Contoso's policy. |
 | 3 | [Knowledge base / grounding](/modules/03-knowledge-base-grounding.md) | Attached File Search / Foundry IQ so the agent grounds discrepancy guidance in `invoice-po-policy.md` with citations. |
 | 4 | [Tools — Built-in (Portal)](/modules/04-tools.md) | Added the Code Interpreter built-in tool and uploaded `discrepancy-trends.csv` for trend analysis. |
@@ -119,7 +135,7 @@ step that guarantees nothing is left behind.
    and the project itself individually, delete the whole resource group you created in Module 1:
 
    ```powershell
-   az group delete --name rg-invoice-discrepancy-assistant --yes --no-wait
+   az group delete --name rg-foundry-practice --yes --no-wait
    ```
 
    Deleting the resource group is simpler *and* more complete than deleting resources one at a
@@ -127,7 +143,7 @@ step that guarantees nothing is left behind.
    ingested trace data from Module 11), every stored file and vector store (Module 3), the Code
    Interpreter upload (Module 4), and the evaluation run data (Module 10) in a single operation,
    with no risk of missing a resource that was created implicitly on your behalf. Replace
-   `rg-invoice-discrepancy-assistant` with your actual resource group name if you used a different one
+   `rg-foundry-practice` with your actual resource group name if you used a different one
    or a facilitator-provided shared group (in which case, confirm with your facilitator before
    deleting it — a shared group may still be in use by other participants).
 4. **Stop any local processes (no Azure cost, but good hygiene).** If you still have a terminal

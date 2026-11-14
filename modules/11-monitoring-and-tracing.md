@@ -14,6 +14,21 @@ agents show up in the same place with no comparable instrumentation effort.
 (Module 10), and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`) and
 virtual environment from Module 0 are still in place.
 
+## Why this module?
+
+- **Where we are:** Module 10 gives us captured answers and quality scores.
+- **What's missing:** A score alone does not explain the execution path, time spent on calls,
+  or token usage. We need runtime evidence to investigate slow or poor responses.
+- **What we'll add:** OpenTelemetry instrumentation, a parent span for each test query, and
+  model-call spans that can be inspected alongside duration and available token attributes.
+  We also examine tracing for Module 8's separate Agent Framework system.
+- **Where it runs:** The demo and custom tools run locally while calling the Prompt Agent in
+  Foundry. Azure Monitor exports telemetry to the connected Application Insights resource,
+  and you inspect it in the portal. This is not a redeployment of Module 9's specialist.
+- **By the end:** You can open a query's trace, inspect its child calls, and use execution
+  evidence alongside evaluation results to choose what to investigate next. Missing token
+  attributes must not be interpreted as zero usage.
+
 > **Scope note:** this module's telemetry bootstrap — `configure_azure_monitor` plus
 > `OpenAIInstrumentor` fed by `project_client.telemetry.get_application_insights_connection_string()`
 > — is verified against the actual `mslearn-genaiops/docs/05-monitoring-tracing.md` reference lab.
@@ -35,7 +50,7 @@ virtual environment from Module 0 are still in place.
 1. Reactivate the virtual environment you've been using since Module 0:
 
    ```powershell
-   Set-Location "$HOME\invoice-discrepancy-assistant"
+   Set-Location "$HOME\foundry-practice"
    .\.venv\Scripts\Activate.ps1
    ```
 

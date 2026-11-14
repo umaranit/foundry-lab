@@ -1,13 +1,28 @@
 # Module 3: Knowledge Base / Grounding
 
 **Objective:** Upload the invoice/PO policy document and ground the agent's discrepancy-handling
-answers in it using File Search / Foundry IQ, understanding indexing and citations.
+answers in it using File Search, understanding indexing and citations.
 
 **Estimated duration:** 30 minutes
 
 **Prerequisites:** Module 2 complete — the **Invoice Discrepancy Assistant** Prompt Agent
 exists and responds to general discrepancy questions in the playground, but cannot yet answer
 policy-specific questions (for example, exact tolerance thresholds) or look up PO data.
+
+## Why this module?
+
+- **Where we are:** Module 2 gave the assistant a role and instructions, but no company policy
+  to consult.
+- **What's missing:** Instructions to "follow policy" cannot supply the actual thresholds.
+  Without a source, the agent must either decline or risk inventing rules.
+- **What we'll add:** File Search over the uploaded policy, so answers can retrieve the
+  relevant rules and cite their source instead of relying on general model knowledge.
+- **Where it runs:** You upload a local document through the portal; Foundry manages the File
+  Search vector store and retrieval. The separate Azure AI Search-backed Foundry IQ knowledge
+  base is introduced in Module 7, not here.
+- **By the end:** Asking about automatic price-mismatch approval should return the policy's
+  **2% and $25** limits with a citation. Retrieving policy text still does not provide a
+  purchase-order lookup or a way to compute trends across a dataset.
 
 ## 1. Review the policy document
 
@@ -26,7 +41,7 @@ policy-specific questions (for example, exact tolerance thresholds) or look up P
      60-day window.
    - Missing-PO invoices over $5,000 cannot get a retroactive PO and must be rejected.
 
-> **Why a Markdown policy document?** File Search / Foundry IQ indexes text content from
+> **Why a Markdown policy document?** File Search indexes text content from
 > uploaded files — Markdown, with its headings and tables, chunks cleanly and keeps the tolerance
 > tables intact, which makes citations easier to trace back to a specific section.
 
@@ -43,8 +58,8 @@ policy-specific questions (for example, exact tolerance thresholds) or look up P
 
 1. Return to **Agents** and open the **Invoice Discrepancy Assistant** you created in Module 2.
 2. In the agent's configuration, find the **Knowledge** (or **Grounding**) section and select
-   **+ Add** > **File search** (shown as **Foundry IQ** in some portal versions — this lab uses
-   "File search" and "Foundry IQ" interchangeably to mean the same grounding capability).
+   **+ Add** > **File search**. Choose the uploaded-file/vector-store retrieval option for this
+   module; the separate Foundry IQ knowledge-base workflow is covered in Module 7.
 3. Create a new knowledge source / vector store and attach the `invoice-po-policy.md` file you
    just uploaded to it.
 4. Save the agent configuration.
@@ -114,14 +129,14 @@ Save the agent.
 Re-read the Module 2 playground responses to the same price-mismatch question (if you still have
 that conversation open) or re-run it mentally: before grounding, the agent could only discuss the
 topic generally and had no specific threshold to cite. Now it should give you the exact numbers
-from Section 3.1, with a citation. This is the core value of File Search / Foundry IQ grounding —
+from Section 3.1, with a citation. This is the core value of File Search grounding —
 turning general domain knowledge into policy-accurate, attributable answers.
 
 ## ✅ Checkpoint / Validate
 
 - [ ] `invoice-po-policy.md` is uploaded to the Foundry project and shows a **Ready**/processed
   status.
-- [ ] A File Search (Foundry IQ) knowledge source is attached to the **Invoice Discrepancy
+- [ ] A File Search knowledge source is attached to the **Invoice Discrepancy
   Assistant** agent and references that file.
 - [ ] Asking "What's our threshold for an automatic price-mismatch approval?" returns the
   specific **2% and $25** thresholds, with a visible citation to the policy document.

@@ -12,8 +12,11 @@ temporary version.
 agent and [Module 1](01-foundry-project-and-model-setup.md)'s existing Foundry project and model
 deployment. You also need:
 
-- Python **3.13 or later** locally; Python **3.14** is recommended to match the hosted runtime
-  selected below.
+- Python **3.13.x** locally, continuing with the same Python installation from
+  [Module 0](00-prerequisites.md) through Module 9; no second local Python version is needed.
+  The hosted runtime's `runtime="python_3_14"` in `CodeConfiguration` is a property of Foundry's
+  remote container build, independent of the local interpreter used to author and test
+  `main.py` via `ResponsesHostServer`.
 - Azure CLI sign-in and the **Foundry Project Manager** role at project scope. Confirm your
   project supports Hosted Agents in its region and has available compute/model capacity.
 - Application Insights connected to the project and permission to read cloud traces. Complete
@@ -21,6 +24,21 @@ deployment. You also need:
   before the first remote invocation; do not wait until Module 11.
 - Permission to upload the lab's fictional PO data. Do not substitute real financial records
   or upload credentials.
+
+## Why this module?
+
+- **Where we are:** Module 8's code-first agents and tools run in a local Python process.
+- **What's missing:** Successful local execution does not show how to package custom agent
+  code, run it on managed compute, or invoke it through a cloud agent endpoint.
+- **What we'll add:** A hosting entry point and source deployment for **one price-mismatch
+  specialist**, followed by activation checks, temporary routing, invocation, and cleanup.
+  The full multi-agent handoff workflow is deliberately outside this module's scope.
+- **Where it runs:** You author and test locally, then Foundry remotely builds and runs the
+  specialist and its packaged CSV lookup in a managed Hosted Agent container. This is the
+  **Hosted Agent** kind, distinct from the earlier Prompt Agent; it is not Azure Functions.
+- **By the end:** You can demonstrate a cloud PO price-comparison response and complete the
+  temporary deployment's cleanup. Module 10 returns to the earlier Prompt Agent, so it does
+  not require this temporary specialist version to remain running.
 
 **Verified references, checked 2026-11-13:**
 
@@ -75,9 +93,9 @@ and must be cleaned up even if the request or provisioning fails.
    az account show --output table
    ```
 
-   Verify the Python version before creating the environment. If it is older than 3.13, select
-   a supported interpreter first. The remote runtime is explicitly `python_3_14`; your laptop's
-   interpreter selection does not change it.
+   Verify that the Python version is **3.13.x** before creating the isolated virtual environment,
+   using the same Python installation as Module 0. The remote runtime is explicitly
+   `python_3_14`; it does not require a matching local interpreter or a second Python installation.
 
 2. Copy the existing fictional [po-records.csv](../data/po-records.csv) into the source folder.
    Replace the placeholder with your lab clone's root:
@@ -296,9 +314,10 @@ and permissions reference if runtime model access is denied.
    ```
 
    Inspect the manifest before uploading: it must contain package requirements, not local
-   paths, editable installs, or authenticated package URLs. Pinning improves repeatability but
-   does not prove Python 3.14 compatibility if you tested with another interpreter. Resolve
-   any dependency/runtime mismatch before deploying.
+   paths, editable installs, or authenticated package URLs. Pinning improves repeatability.
+   Local testing on Python 3.13 validates the agent logic; remote build compatibility is a
+   separate, server-side concern checked via the build logs (see **Remote build fails** in
+   Troubleshooting).
 
 ### 5. Package, deploy, invoke, and clean up with the Python SDK
 

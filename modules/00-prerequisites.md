@@ -7,6 +7,19 @@ needed to complete every later module, so technical setup never blocks the lab e
 
 **Prerequisites:** None — this module establishes everything later modules depend on.
 
+## Why this module?
+
+- **Where we are:** We have an invoice-discrepancy scenario to explore, but have not built
+  an agent yet. This module establishes the starting point rather than extending a previous one.
+- **What's missing:** Azure permissions, model quota, sign-in, or missing developer tools can
+  block later exercises before any agent development begins.
+- **What we'll add:** A checked development environment, a lab working folder, and an early
+  check of cloud access and quota so setup problems can be resolved first.
+- **Where it runs:** VS Code, Python, Git, and the CLI run on your computer. You use the Azure
+  and Foundry portals to check cloud access; no agent application is deployed here.
+- **By the end:** You can identify the subscription and region you'll use, sign in to Foundry,
+  and run the local tools needed to start Module 1.
+
 ## Steps
 
 ### 1. Confirm Azure subscription access
@@ -94,8 +107,8 @@ than during Module 1.
 Create a local folder you'll use for the client code written in later modules (Module 5 onward):
 
 ```powershell
-New-Item -ItemType Directory -Path "$HOME\invoice-discrepancy-assistant" -Force
-Set-Location "$HOME\invoice-discrepancy-assistant"
+New-Item -ItemType Directory -Path "$HOME\foundry-practice" -Force
+Set-Location "$HOME\foundry-practice"
 ```
 
 ### 9. Verify end-to-end sign-in

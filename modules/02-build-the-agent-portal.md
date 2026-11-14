@@ -10,6 +10,19 @@ This is a Prompt Agent (AgentKind.PROMPT) - server-managed by Foundry, not to be
 **Prerequisites:** Module 1 complete — a Foundry project exists with the
 `invoice-assistant-chat` model deployment showing status **Succeeded**.
 
+## Why this module?
+
+- **Where we are:** Module 1 gave us a working chat model.
+- **What's missing:** A general-purpose model has no defined accounts-payable role, company
+  instructions, or boundaries for handling missing information.
+- **What we'll add:** The **Invoice Discrepancy Assistant** Prompt Agent, with instructions
+  defining its role, scope, and refusal to invent policy or purchase-order details.
+- **Where it runs:** Foundry manages the Prompt Agent and calls the Azure model. You configure
+  and test it in the portal; there is no local Python client or custom Hosted Agent container yet.
+- **By the end:** You can demonstrate an on-topic assistant that acknowledges its limits.
+  Asking for a policy threshold or PO-10234 should expose the missing knowledge and tools,
+  giving us concrete problems to address in Modules 3 and 5.
+
 ## Steps
 
 ### 1. Navigate to Agents

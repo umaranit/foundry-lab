@@ -8,11 +8,25 @@ can analyze the sample discrepancy trend dataset. (File Search was already added
 **Prerequisites:** Module 3 complete — the **Invoice Discrepancy Assistant** has File Search
 attached and grounds policy questions with citations to `invoice-po-policy.md`.
 
+## Why this module?
+
+- **Where we are:** Module 3 enabled policy-grounded answers with File Search.
+- **What's missing:** Retrieving a policy paragraph is different from calculating counts,
+  grouping records by vendor, or comparing discrepancy trends over time.
+- **What we'll add:** Code Interpreter and a historical discrepancy dataset, giving the agent
+  a built-in way to execute analysis rather than estimate numerical answers.
+- **Where it runs:** You configure the tool and upload the CSV in the portal. Generated Python
+  runs in the service's Code Interpreter sandbox, not your local Python environment. You do
+  not write or deploy an Azure Function.
+- **By the end:** You can ask which discrepancy type increased and which vendor drove it,
+  then inspect the code-execution evidence. This analyzes historical events; retrieving a
+  specific purchase order remains the next gap, addressed in Module 5.
+
 ## Steps
 
 ### 1. Recap: File Search is already attached
 
-Module 3 attached **File Search** (Foundry IQ) so the agent can ground policy answers in
+Module 3 attached **File Search** so the agent can ground policy answers in
 `invoice-po-policy.md`. That tool stays exactly as configured — this module doesn't touch it. You
 are only *adding* a second built-in tool: **Code Interpreter**, so the agent can run code against
 a dataset rather than just retrieving and citing text.

@@ -14,6 +14,21 @@ Storage resources and configure their connections; an available embedding model 
 completions model; VS Code with the Foundry Toolkit extension. Keep your existing Python virtual
 environment, `.env`, File Search vector store, and Module 6 client.
 
+## Why this module?
+
+- **Where we are:** Our Prompt Agent has basic File Search grounding and custom tools,
+  including a local MCP integration from Module 6.
+- **What's missing:** We have not explored a multi-source-capable knowledge base or the
+  approval flow for a remote MCP-style retrieval tool. Local stdio MCP does not teach that flow.
+- **What we'll add:** A Foundry IQ knowledge base alongside File Search, using the same policy
+  for comparison, and a separate demo that handles explicitly enabled retrieval approvals.
+  This explores another retrieval option; it does not assume File Search is inadequate.
+- **Where it runs:** Azure AI Search and Blob Storage support the cloud knowledge base.
+  Your local demo submits requests and approval decisions; it does not run the retrieval
+  server as a subprocess. The Module 6 client remains unchanged.
+- **By the end:** You can compare retrieval evidence and citations, approve or deny a Foundry IQ
+  request, and explain the additional setup and cost without assuming it improves every answer.
+
 > **Sequence note:** This module follows MCP Integration and builds on Modules 5–6's
 > conversations/responses client pattern, but puts the new knowledge-and-approval demonstration
 > in **`foundry_iq_demo.py`**. Do not edit or replace **`client.py`**: preserve it for reuse in
@@ -32,8 +47,8 @@ regional availability, and supported model choices can change.
 
 ### 1. Contrast File Search with Foundry IQ
 
-File Search and Foundry IQ are **distinct retrieval options**, not synonyms. Earlier Module 3
-wording groups them together; in this module, **File Search** means the single vector store you
+File Search and Foundry IQ are **distinct retrieval options**, not synonyms. **File Search**
+means the single vector store you
 attached there, and **Foundry IQ** means the Azure AI Search-backed knowledge base you create now.
 
 | Aspect | Module 3: File Search | Module 7: Foundry IQ |
@@ -199,7 +214,7 @@ extension's agent builder**:
 1. Return to the Module 0 working folder and activate the same virtual environment:
 
    ```powershell
-   Set-Location "$HOME\invoice-discrepancy-assistant"
+   Set-Location "$HOME\foundry-practice"
    .\.venv\Scripts\Activate.ps1
    ```
 
@@ -450,6 +465,10 @@ Compare how clearly each answer distinguishes a policy rule from an actual PO/re
 - **Search creation or model selection is blocked:** Check resource-creation permissions,
   region, tier availability, and model deployment/quota. A chat model is not an embedding model.
   Use the facilitator's supported setup rather than making an unapproved tier or region change.
+- **Key-based authentication is rejected with a policy/compliance error:** Unlike a typo or
+  wrong key, this likely indicates an organizational Azure Policy restriction on Search or
+  Storage, not a lab mistake. Escalate to the subscription owner rather than retrying the same
+  steps.
 - **Search connection fails with an authentication error:** Check **Security + networking >
   Keys > API Access control = Both**, then **Knowledge > Connection > Manage > Connected
   resources > Authentication = Key authentication**. Confirm the saved key belongs to that

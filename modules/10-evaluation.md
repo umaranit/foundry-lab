@@ -11,6 +11,21 @@ the `lookup_po_by_number` function tool, the `get_escalation_contact` MCP tool, 
 Code Interpreter, and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`)
 and virtual environment from Module 0 are still in place.
 
+## Why this module?
+
+- **Where we are:** We have manually exercised agent capabilities and explored local
+  orchestration and cloud hosting.
+- **What's missing:** A few convincing answers or a successful deployment do not establish
+  answer quality across discrepancy types and edge cases.
+- **What we'll add:** Repeatable response capture against a seed dataset and built-in
+  evaluations for intent resolution, relevance, and groundedness. We return to the
+  **Modules 5–6 Prompt Agent**, not Module 8's workflow or Module 9's temporary Hosted Agent.
+- **Where it runs:** A local capture script executes the PO and stdio MCP tools while calling
+  the Prompt Agent in Foundry. The enriched dataset is then uploaded for cloud evaluation.
+- **By the end:** You can inspect per-query scores and actual answers to identify weaknesses
+  worth fixing. This small lab dataset demonstrates the evaluation process; passing it is
+  not proof of production readiness.
+
 > **Scope correction:** this module's evaluators and API shapes are verified against the actual
 > `mslearn-genaiops/src/evaluators/evaluate_agent.py` reference script (the Evals API via
 > `project_client.get_openai_client()`, not a standalone `evaluate` SDK call), not against
@@ -59,7 +74,7 @@ and virtual environment from Module 0 are still in place.
    virtual environment from Module 0 is still activated and skip straight to Step 3:
 
    ```powershell
-   Set-Location "$HOME\invoice-discrepancy-assistant"
+   Set-Location "$HOME\foundry-practice"
    .\.venv\Scripts\Activate.ps1
    ```
 

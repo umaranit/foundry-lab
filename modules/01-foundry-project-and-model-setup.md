@@ -7,6 +7,19 @@ model selection and deployment options available in the portal.
 
 **Prerequisites:** Module 0 complete — Azure sign-in verified and model quota confirmed.
 
+## Why this module?
+
+- **Where we are:** Module 0 established access and local tooling.
+- **What's missing:** Installed tools and an Azure subscription do not yet give our application
+  a model to call or a project in which to manage the agent.
+- **What we'll add:** A Foundry project and a chat model deployment, chosen with capability,
+  cost, and regional availability in mind. These are the foundation for later agent exercises.
+- **Where it runs:** You configure resources in the browser. The project and deployed model
+  live in Azure; the model does not run on your laptop.
+- **By the end:** You can send a test prompt to the deployed model and identify the project
+  endpoint and deployment name that later modules will use. This is still a model test, not
+  yet the Invoice Discrepancy Assistant.
+
 ## Steps
 
 ### 1. Create a Foundry project
@@ -14,10 +27,10 @@ model selection and deployment options available in the portal.
 1. Browse to the [Foundry portal](https://ai.azure.com) and sign in.
 2. Select **Create new** > **Project**.
 3. Fill in the project details:
-   - **Project name:** `invoice-discrepancy-assistant` (or `<your-initials>-invoice-assistant` if sharing a
+   - **Project name:** `foundry-practice-project` (or `<your-initials>-foundry-practice-project` if sharing a
      subscription with other workshop participants)
    - **Subscription:** `<your-subscription-name>`
-   - **Resource group:** create new, e.g. `rg-invoice-discrepancy-assistant`, or use the one your
+   - **Resource group:** create new, e.g. `rg-foundry-practice`, or use the one your
      facilitator provided
    - **Region:** the region you confirmed has model quota in Module 0, e.g. `eastus2`
 4. Select **Create** and wait for the project to finish provisioning (usually under a minute).

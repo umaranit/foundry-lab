@@ -1,7 +1,7 @@
 # Module 5: Custom Function Tools (Code)
 
 **Objective:** Define a `FunctionTool` for "look up PO by number" (backed by `po-records.csv`),
-create a new version of the hosted **Invoice Discrepancy Assistant** agent in code with
+create a new version of the **Invoice Discrepancy Assistant** Prompt Agent in code with
 `project_client.agents.create_version`, and build a client that calls it using
 `openai_client.conversations.create()` / `openai_client.responses.create()` — handling the
 function-call loop yourself.
@@ -13,8 +13,22 @@ Agent exists, grounds policy answers with File Search (Module 3), and can analyz
 `discrepancy-trends.csv` with Code Interpreter (Module 4). You'll need your Foundry project
 endpoint (noted in Module 1, Step 2) and a local clone of this lab repository.
 
+## Why this module?
+
+- **Where we are:** The assistant can retrieve company policy and analyze historical trends.
+- **What's missing:** Neither capability gives it a tool to retrieve an actual purchase order.
+  It cannot reliably compare an invoice with PO-10234 without that PO's recorded values.
+- **What we'll add:** A custom PO lookup function and a Python conversation client. The model
+  requests the tool; our client executes it and returns the result. We also learn to update the
+  existing Prompt Agent's configuration from code while retaining its built-in tools.
+- **Where it runs:** The Prompt Agent runs in Foundry. Your client and lookup function run on
+  your computer and read the local sample CSV. **Azure Functions is not used.** Registering a
+  `FunctionTool` describes the callable tool; it does not upload or host its Python implementation.
+- **By the end:** Asking whether PO-10234 was invoiced within tolerance should combine
+  retrieved PO values with company policy, rather than a guessed price or a refusal.
+
 > **Why code now?** Modules 2–4 configured the agent entirely through the portal. Starting here,
-> you'll extend the *same* hosted agent by creating new versions of it from code — this module
+> you'll extend the *same* Prompt Agent by creating new versions of it from code — this module
 > adds a custom function tool; Module 6 adds an MCP tool the same way. This is still the one
 > Prompt Agent from Module 2, just gaining capabilities over successive versions.
 > It is **not** the code-first Agent Framework system you'll build in Module 8 — don't conflate
@@ -27,7 +41,7 @@ endpoint (noted in Module 1, Step 2) and a local clone of this lab repository.
 1. Open a terminal in the working folder you created in Module 0:
 
    ```powershell
-   Set-Location "$HOME\invoice-discrepancy-assistant"
+   Set-Location "$HOME\foundry-practice"
    ```
 
 2. Create and activate a virtual environment:

@@ -64,6 +64,9 @@ Evaluation (Module 10) still targets the Module 6 Prompt Agent, and monitoring/t
 
 ## Conventions used in this lab
 
+- Each module opens with **Why this module?**: where we are, what's missing, what we'll add,
+  where it runs, and a concrete outcome. Architectural alternatives and returns to earlier
+  agents are called out explicitly rather than presented as one continuous deployment.
 - Steps are numbered and written for you to follow along in order.
 - Code blocks contain placeholders such as `<your-resource-name>` — replace them with your own
   values.

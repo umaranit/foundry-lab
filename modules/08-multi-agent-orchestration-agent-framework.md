@@ -12,6 +12,20 @@ environment / `.env` file in your Module 0 working folder). This module does **n
 the hosted **Invoice Discrepancy Assistant** agent itself — only on the data files and local
 environment you've already set up.
 
+## Why this module?
+
+- **Where we are:** Modules 2–7 explored one Prompt Agent with knowledge and tools.
+- **What's missing:** We have not explored explicit routing between specialists with separate
+  responsibilities. Adding another retrieval tool does not teach that orchestration pattern.
+- **What we'll add:** A separate Agent Framework system: a coordinator routes sample requests
+  to a price-mismatch, duplicate-invoice, or missing-PO specialist. This is an architectural
+  alternative, not a required upgrade or another version of the earlier Prompt Agent.
+- **Where it runs:** Agent orchestration and the CSV lookup run in local Python; model calls
+  go to Foundry. These agents do not inherit the Prompt Agent's tools or knowledge sources:
+  this exercise embeds policy in specialist instructions instead.
+- **By the end:** You can run sample queries for all three paths and observe the intended
+  specialist handoff. You have a working local workflow, not a deployed multi-agent service.
+
 > **A separate, code-first agent system — not a new version of the hosted agent.** Every module
 > so far (2 through 6) built and extended **one** Prompt Agent called the
 > **Invoice Discrepancy Assistant**, configured first in the portal and then given new versions
