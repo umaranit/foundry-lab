@@ -566,33 +566,75 @@ Before running, understand the lifecycle:
 ### 6. Run the cloud round trip and validate the response
 
 1. Confirm the local host is stopped, your virtual environment is active, and `.env` names
-   your **dedicated** lab agent. From `module09-hosted`, run:
+   your **dedicated** lab agent. In VS Code, open `deploy_hosted_agent.py` and use
+   **Python: Select Interpreter** to select `module09-hosted\.venv\Scripts\python.exe`.
+2. Set a breakpoint on `if original_agent_endpoint is not None:` inside the cleanup
+   `finally` block: click the gutter beside that line or place the cursor on it and press
+   **F9**. Run the file using **Debug Python File** in the editor's Run/Debug menu.
+   This pauses execution after the response is printed but **before** endpoint restoration
+   and version deletion, without changing the Python code.
 
-   ```powershell
-   python .\deploy_hosted_agent.py
-   ```
+   > **Why pause?** A normal `python .\deploy_hosted_agent.py` run immediately deletes the
+   > temporary version after printing the answer. Use this debugger pause to complete Step 7's
+   > portal checks while the version is still active. Do not stop the debugger or close VS Code
+   > while paused; you must resume execution afterward so cleanup runs.
 
-2. Observe the ZIP's three filenames, the created version number, provisioning status, traffic
+3. Observe the ZIP's three filenames, the created version number, provisioning status, traffic
    update, and response. Record the **agent name and version** immediately for recovery if the
    terminal is interrupted. Keep the printed original endpoint configuration until cleanup
    is confirmed.
-3. Compare the hosted answer with **every expected fact in Step 4's table**, especially the
+4. Compare the hosted answer with **every expected fact in Step 4's table**, especially the
    `$600` impact and Procurement tier. Inspect available hosted traces for the PO lookup.
    `"active"` validates startup, not policy correctness or tool execution; a fluent but
    unsupported answer is not a successful lab result.
-4. Let the script finish. Do not close the terminal after seeing the answer: cleanup happens
-   immediately afterward. Expect `Original agent endpoint restored` if a prior configuration
-   existed, followed by `Confirmed deletion of hosted agent version <version>`.
+5. Once the script reports `"active"`, prints the response, and pauses at the cleanup
+   breakpoint, leave it paused for Step 7. The breakpoint can also be reached after a failure:
+   if activation or invocation failed, do not count this as success. Resume with **Continue**
+   (**F5**) to let cleanup run, then follow Step 8's failure-path checks.
 
 The response is a sample outcome, not a guarantee of deterministic model behavior. If the
 answer misses a threshold, first verify the instructions, actual tool result, and invoice
 quantity before changing prompts or trying another deployment.
 
-### 7. Confirm cleanup, including failure paths
+### 7. Verify the active deployment in the Foundry portal
 
-1. In Foundry, open your dedicated hosted agent and refresh its versions. Confirm the temporary
-   version is gone. If a prior endpoint configuration existed, confirm the prior version
-   selection/protocol configuration is restored.
+1. While the successful run is paused before cleanup, open the
+   [Foundry portal](https://ai.azure.com). Open the project matching `FOUNDRY_PROJECT_ENDPOINT`
+   in `.env`, then navigate to **Agents** > **<agent name>** > **Versions** tab.
+   Use the dedicated hosted agent name from `FOUNDRY_HOSTED_AGENT_NAME` in `.env`, not the
+   earlier **Invoice Discrepancy Assistant** Prompt Agent.
+2. Refresh the versions list and find the **new version number recorded in Step 6**. Confirm
+   its status is **Active**, then open that version's details and visually verify the
+   requested configuration:
+
+   | Portal check | Expected value |
+   |---|---|
+   | Status | **Active** |
+   | Compute | **0.5 CPU / 1Gi memory** |
+   | Runtime | `python_3_14` |
+   | Protocol | `responses` version `2.0.0` |
+
+   Check the portal values, not just the script's printed output. If a field is not exposed
+   in your portal view, record that limitation with the facilitator rather than marking it
+   visually verified.
+3. If this agent view exposes **Traces** or a link to the connected **Application Insights**,
+   open it and find the test invocation using its time and agent/version identifiers where
+   available. Confirm a trace is visible for the `INV-HOST-001` / `PO-10234` request and inspect
+   available lookup spans. Allow for telemetry ingestion delay and refresh. If tracing is
+   not reachable from this view, record that limitation; do not treat console output as
+   evidence of a visible trace.
+4. Return to VS Code promptly and select **Continue** (**F5**) to run cleanup. Do not stop the
+   debugger. Expect `Original agent endpoint restored` if a prior configuration existed,
+   followed by `Confirmed deletion of hosted agent version <version>`. Remove the breakpoint
+   after the run and proceed to Step 8; hosted compute remains billable while paused.
+
+### 8. Confirm cleanup, including failure paths
+
+1. In the [Foundry portal](https://ai.azure.com), open your project > **Agents** >
+   **<agent name>** > **Versions** tab, using `FOUNDRY_HOSTED_AGENT_NAME` from `.env`.
+   Refresh and confirm the temporary version recorded in Step 6 is gone. If a prior endpoint
+   configuration existed, open the same agent's endpoint configuration and confirm the prior
+   version selection/protocol configuration is restored.
 2. Verify that the existing **Invoice Discrepancy Assistant** Prompt Agent and Module 8's
    local script are unchanged.
 3. If provisioning fails or times out after creation returns, or invocation fails, the same
@@ -626,6 +668,8 @@ Neither requires leaving this temporary Hosted Agent version running.
 > - [ ] The service ran through `ResponsesHostServer` locally, and the ZIP excluded secrets,
 >   `.env`, `.venv`, `.git`, caches, and the deployment client.
 > - [ ] The hosted version reached `"active"` before routing and invocation.
+> - [ ] I opened the Foundry portal and visually confirmed the hosted agent version's status,
+>   compute, and runtime - not just the script's console output.
 > - [ ] The named-agent response used the `$14.80` PO price and correctly escalated the
 >   `$600` impact to Procurement with a 3-business-day SLA; I checked lookup execution evidence.
 > - [ ] Prior endpoint configuration was restored when present, and temporary-version deletion

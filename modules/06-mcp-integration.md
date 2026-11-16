@@ -277,6 +277,12 @@ the `with` block that creates the new agent version — the same pattern as Modu
                 print(f"Updated agent '{agent.name}' with the escalation-contact MCP tool.")
 ```
 
+**Verify in the Foundry portal:** Once `create_version` succeeds and prints its confirmation,
+open [Foundry](https://ai.azure.com) and navigate to your project > **Agents** >
+**Invoice Discrepancy Assistant** > **Versions** tab. Visually confirm a new version appears
+with the escalation-contact MCP tool (`get_escalation_contact`) listed alongside the Module 5
+tools: `lookup_po_by_number`, **File Search**, and **Code Interpreter**.
+
 `create_version` replaces the entire tool list. The list above retains all three Module 5 tools
 and adds the MCP tools. Re-test Modules 3–5's questions after Step 9 to confirm nothing regressed.
 
@@ -385,6 +391,8 @@ if __name__ == "__main__":
 
 - [ ] `python client.py` prints the connected-tools line, then the agent-version confirmation,
   without import or authentication errors.
+- [ ] The Foundry portal's **Versions** tab shows a new **Invoice Discrepancy Assistant** version
+  with `get_escalation_contact` listed alongside all three Module 5 tools.
 - [ ] Asking an escalation-contact question returns the correct contact and SLA from policy
   Section 8, not a guessed answer.
 - [ ] Asking about the "no internal escalation" case (missing PO over $5,000) is handled

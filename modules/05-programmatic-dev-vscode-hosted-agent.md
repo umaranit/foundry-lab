@@ -324,6 +324,11 @@ with (
     print(f"Updated agent '{agent.name}' with the PO lookup tool.")
 ```
 
+**Verify in the Foundry portal:** Once this code succeeds and prints its confirmation, open
+[Foundry](https://ai.azure.com) and navigate to your project > **Agents** >
+**Invoice Discrepancy Assistant** > **Versions** tab. Visually confirm a new version appears
+with `lookup_po_by_number` listed alongside **File Search** and **Code Interpreter**.
+
 > **Why `agent_name="Invoice Discrepancy Assistant"` and not a new name?** Using the same name as
 > the agent you created in Module 2 creates a new **version** of that agent rather than a
 > separate agent — this is intentional. Every run of this script creates another version (which
@@ -437,6 +442,8 @@ Step 6:
 
 - [ ] `python client.py` runs without import or authentication errors and prints a confirmation
   that the agent version was updated.
+- [ ] The Foundry portal's **Versions** tab shows a new **Invoice Discrepancy Assistant** version
+  with `lookup_po_by_number`, **File Search**, and **Code Interpreter** listed.
 - [ ] Asking to look up **PO-10234** returns the real record from `po-records.csv` (vendor,
   price, quantity), not a refusal.
 - [ ] Asking to look up a nonexistent PO number (for example **PO-10243**) returns a clear
