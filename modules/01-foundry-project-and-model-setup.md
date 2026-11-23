@@ -42,7 +42,7 @@ model selection and deployment options available in the portal.
 ### 2. Tour the project overview
 
 1. On the project's **Overview** page, locate:
-   - The **connection string** / project endpoint (you'll need this in Module 5).
+   - The **project endpoint** (you'll need this in Module 5).
    - The list of connected resources (for example, the Azure AI Services / Cognitive Services
      resource backing your model deployments).
 2. Open the left-hand navigation and note where **Models + endpoints**, **Agents**, **Files**,
@@ -52,20 +52,23 @@ model selection and deployment options available in the portal.
 
 1. Select **Model catalog** from the left-hand navigation.
 2. Filter by **chat completion** models.
-3. Compare two or three candidate models (for example `gpt-4o`, `gpt-4o-mini`) using these
-   criteria for this scenario:
+3. Check the model catalog for a current, non-deprecated chat model rather than defaulting to
+   `gpt-4o` or `gpt-4o-mini`. Compare candidates using these criteria for this scenario:
    - **Capability:** does it reliably follow grounding/tool-use instructions?
    - **Cost:** per-token pricing, relevant since this lab runs many test queries.
    - **Context window:** large enough for policy text + PO lookups + conversation history.
    - **Region/quota availability:** must be deployable in the region you confirmed in Module 0.
 
+> Before each delivery, check [Microsoft's model retirement schedule](https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule)
+> to confirm model availability and retirement dates.
+
 ### 4. Deploy a chat model
 
-1. From the model catalog, select your chosen model (for example `gpt-4o-mini`) and select
+1. From the model catalog, select your chosen current, non-deprecated chat model and select
    **Deploy**.
 2. Configure the deployment:
    - **Deployment name:** `invoice-assistant-chat` (you'll reference this name in later modules)
-   - **Deployment type:** **Standard** (pay-as-you-go) is sufficient for this lab; **Provisioned
+   - **Deployment type:** **Global Standard** (pay-as-you-go) is sufficient for this lab; **Provisioned
      throughput** is unnecessary unless you expect sustained high load.
    - **Content filter:** leave the default filter in place for this scenario.
 3. Select **Deploy** and wait for the deployment status to show **Succeeded**.
@@ -74,17 +77,27 @@ model selection and deployment options available in the portal.
 
 Before moving on, make sure you can explain the difference between:
 
-- **Standard (pay-as-you-go)** vs **Provisioned throughput** deployments — pay-per-token vs.
+- **Global Standard (pay-as-you-go)** vs **Provisioned throughput** deployments — pay-per-token vs.
   reserved capacity for predictable, high-volume workloads.
 - **Global vs. regional** deployment options, where available, and how they affect data
   residency and latency.
 - **Model versioning** — new model versions are released over time; you can pin a specific
   version or take automatic updates, which matters for reproducibility in evaluation (Module 10).
 
-### 6. Verify the deployment
+### 6. Deploy an embedding model
+
+1. In the model catalog, select a current embedding model such as `text-embedding-3-small` and
+   select **Deploy**.
+2. Configure the deployment:
+   - **Deployment name:** `invoice-assistant-embedding`
+   - **Deployment type:** **Global Standard**, if available for the selected model and region.
+3. Select **Deploy** and wait for the deployment status to show **Succeeded**. Module 7 uses this
+   deployment to index and retrieve the policy in Foundry IQ.
+
+### 7. Verify the deployments
 
 1. From the deployment's details page, select **Open in playground** (or navigate to **Playground**
-   and select your deployment from the dropdown).
+   and select your chat deployment from the dropdown).
 2. Send a simple test prompt, for example:
 
    ```text
@@ -100,16 +113,17 @@ Before moving on, make sure you can explain the difference between:
 - [ ] Your Foundry project shows a **Succeeded** status on its overview page.
 - [ ] A chat model deployment named `invoice-assistant-chat` (or your chosen name) shows status
   **Succeeded** under **Models + endpoints**.
+- [ ] An embedding model deployment named `invoice-assistant-embedding` (or your chosen name)
+  shows status **Succeeded** under **Models + endpoints**.
 - [ ] You received a coherent response to a test prompt in the playground.
 - [ ] You can state which model you deployed and why, using the capability/cost/context
   window/region criteria above.
 
 ## 🚀 Try it yourself
 
-Deploy a second, smaller model (for example `gpt-4o-mini` if you deployed `gpt-4o`, or vice
-versa) under a different deployment name, and send it the same test prompt. Compare the response
-quality and latency. Keep both deployments — you'll be able to compare them again once tools and
-grounding are added in later modules.
+Deploy a second, smaller current, non-deprecated chat model under a different deployment name and
+send it the same test prompt. Compare the response quality and latency. Keep both chat deployments
+to compare them again once tools and grounding are added in later modules.
 
 ## ⚠️ Troubleshooting
 

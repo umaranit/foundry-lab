@@ -69,7 +69,7 @@ MODULES TO COVER (one markdown file each, in this order)
    (price-mismatch-agent, duplicate-invoice-agent, missing-po-agent) using the Microsoft Agent Framework
    SDK (pip install agent-framework), and an orchestrator that classifies a discrepancy and routes it to
    the right specialist, then returns its result. Clearly call out how this differs from the Prompt
-   Agent in Modules 2–7 (code-first definition and orchestration vs. server-hosted agent + portal config),
+   Agent in Modules 2–7 (code-first definition and orchestration vs. service-managed prompt execution + portal config),
    and mention this is Microsoft's recommended direction over the now-retiring Prompt Flow.
 9. Deploy to Foundry Hosted Agents — 45 minutes. Ground the exercise in
    https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-hosted-agent?pivots=python
@@ -94,7 +94,7 @@ MODULES TO COVER (one markdown file each, in this order)
    identity/permissions, and connected Application Insights prerequisites before deployment;
    do not defer these checks until Module 11. Supply the single-specialist entry point and
    source-deployment script. Keep Module 8's local script and Modules 10–11's existing targets unchanged.
-10. Evaluation — capture real hosted-agent responses against a seed query/ground-truth dataset,
+10. Evaluation — capture real Prompt Agent responses against a seed query/ground-truth dataset,
    then run the verified built-in Foundry cloud evaluators (intent_resolution, relevance,
    groundedness; no custom evaluator), interpret results.
 11. Monitoring & tracing — wire up Application Insights / Azure Monitor, enable distributed tracing,

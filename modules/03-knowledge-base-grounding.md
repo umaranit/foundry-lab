@@ -26,7 +26,7 @@ policy-specific questions (for example, exact tolerance thresholds) or look up P
 
 ## 1. Review the policy document
 
-1. Open [`data/invoice-po-policy.md`](/data/invoice-po-policy.md) in VS Code.
+1. Open [`data/invoice-po-policy.md`](../data/invoice-po-policy.md) in VS Code.
 2. Skim its structure — this is Contoso Finance's (fictional) accounts-payable policy, and is the
    single source of truth the agent should ground its discrepancy-handling answers in:
    - Section 3 — **price mismatch** tolerance thresholds and escalation.

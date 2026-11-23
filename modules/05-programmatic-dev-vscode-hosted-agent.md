@@ -101,7 +101,7 @@ endpoint (noted in Module 1, Step 2) and a local clone of this lab repository.
 
 ### 3. Review the PO records the lookup tool will read
 
-1. Open [`data/po-records.csv`](/data/po-records.csv) in VS Code.
+1. Open [`data/po-records.csv`](../data/po-records.csv) in VS Code.
 2. Note the columns: `po_number`, `vendor_name`, `item_description`, `unit_price`, `quantity`,
    `order_date`, `status` — and that `PO-10234` (the example you tried unsuccessfully in Module 2)
    is in there, so you can confirm the tool actually works this time.
@@ -259,8 +259,9 @@ said the agent didn't yet have a PO lookup tool) replaced with the paragraph gra
 `create_version` replaces the entire tool list, so include File Search and Code Interpreter
 alongside the PO lookup tool.
 
-1. Module 3 created the vector store in the portal without capturing its ID. Run this standalone
-   snippet from your working folder to list vector stores and find the Module 3 store by name:
+1. Module 3 created the vector store in the portal without capturing its ID. Module 4 also
+   uploaded a Code Interpreter file. Run this standalone snippet from your working folder to list
+   vector stores and files:
 
    ```python
    import os
@@ -280,14 +281,19 @@ alongside the PO lookup tool.
    ):
        for vector_store in openai_client.vector_stores.list():
            print(vector_store.name, vector_store.id)
+       for file in openai_client.files.list():
+           print(file.filename, file.id)
    ```
 
-   Alternatively, open that vector store's page in the portal and copy its ID.
+   Find the Module 3 vector store by name and the `discrepancy-trends.csv` file uploaded in
+   Module 4. Alternatively, copy their IDs from the portal's vector store and file lists. If
+   multiple files have the same name, identify the one attached in Module 4.
 
-2. Add the matching ID to your `.env` file:
+2. Add both matching IDs to your `.env` file:
 
    ```text
    FILE_SEARCH_VECTOR_STORE_ID=<your-Module-3-vector-store-ID>
+   CODE_INTERPRETER_FILE_ID=<your-Module-4-file-ID>
    ```
 
 3. Append these tool definitions to `client.py`, below `po_lookup_tool`:
@@ -296,7 +302,11 @@ alongside the PO lookup tool.
    file_search_tool = FileSearchTool(
        vector_store_ids=[os.environ["FILE_SEARCH_VECTOR_STORE_ID"]]
    )
-   code_interpreter_tool = CodeInterpreterTool(container=CodeInterpreterContainerAuto())
+   code_interpreter_tool = CodeInterpreterTool(
+       container=CodeInterpreterContainerAuto(
+           file_ids=[os.environ["CODE_INTERPRETER_FILE_ID"]]
+       )
+   )
    ```
 
 ### 6. Create a new agent version with the PO lookup tool
@@ -481,8 +491,8 @@ Confirm the agent calls your new tool and lists only that vendor's records.
   just in an earlier draft of the file.
 - **Module 3/4 questions stop working after this module:** Confirm your `tools=[...]` list includes
   `po_lookup_tool`, `file_search_tool`, and `code_interpreter_tool` as shown in Step 6, and that
-  `FILE_SEARCH_VECTOR_STORE_ID` matches the Module 3 store. Restore any missing definitions and
-  re-run `create_version`.
+  `FILE_SEARCH_VECTOR_STORE_ID` matches the Module 3 store and `CODE_INTERPRETER_FILE_ID` matches
+  the Module 4 file. Restore any missing definitions and re-run `create_version`.
 - **`response.output` has no `function_call` items even when you ask for a PO lookup:** Double
   check the `FunctionTool`'s `parameters` schema matches exactly what you call in Python
   (`po_number`), and that `strict=True` isn't rejecting a malformed schema — a schema/behavior

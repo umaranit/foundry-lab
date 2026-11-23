@@ -8,7 +8,7 @@
 
 ## 1. Invoice & PO policy document ✅ generated
 
-- **Filename:** [`invoice-po-policy.md`](/data/invoice-po-policy.md) (plain Markdown)
+- **Filename:** [`invoice-po-policy.md`](invoice-po-policy.md) (plain Markdown)
 - **Used in:** Module 3 (File Search grounding), Module 6 (Section 8 escalation-contact table
   grounds the MCP tool), Module 7 (Foundry IQ: upload the same policy to Blob Storage
   while retaining File Search), and Module 10 (evaluation).
@@ -28,7 +28,7 @@ has a consistent source; no second document is required or supplied.
 
 ## 2. Sample PO records (CSV) ✅ generated
 
-- **Filename:** [`po-records.csv`](/data/po-records.csv) (CSV, 18 rows)
+- **Filename:** [`po-records.csv`](po-records.csv) (CSV, 18 rows)
 - **Used in:** Module 5 (custom "look up PO by number" function tool, and the client that calls
   it), Module 8 (specialist agents), and Module 9 (copied into the single-specialist Hosted Agent
   source package using that module's packaging/deployment instructions).
@@ -45,12 +45,12 @@ has a consistent source; no second document is required or supplied.
 ## 3. Invoice discrepancy evaluation datasets
 
 - **Filenames:**
-  - [`discrepancy-eval-seed.jsonl`](/data/discrepancy-eval-seed.jsonl) ✅ generated — 15
+  - [`discrepancy-eval-seed.jsonl`](discrepancy-eval-seed.jsonl) ✅ generated — 15
     `{"query": ..., "ground_truth": ...}` objects, one per line. This is the hand-authored input
     file.
   - `discrepancy-eval-dataset.jsonl` — one `{"query": ..., "response": ..., "ground_truth": ...}`
     object per line. This file is *generated*, not committed: Module 10's capture script reads
-    `discrepancy-eval-seed.jsonl`, sends each `query` to the live Module 6 hosted agent (the same
+    `discrepancy-eval-seed.jsonl`, sends each `query` to the live Module 6 Prompt Agent (the same
     `conversations`/`responses` client pattern as Modules 5–6), records the agent's actual
     `response.output_text`, and writes the enriched triples here. Only this file is a valid input
     to the Evals API — the seed file alone is missing the `response` field every built-in
@@ -75,7 +75,7 @@ has a consistent source; no second document is required or supplied.
 
 ## 4. Discrepancy trend CSV (code interpreter) ✅ generated
 
-- **Filename:** [`discrepancy-trends.csv`](/data/discrepancy-trends.csv) (CSV, 81 rows)
+- **Filename:** [`discrepancy-trends.csv`](discrepancy-trends.csv) (CSV, 81 rows)
 - **Used in:** Module 4 (Code Interpreter tool) only. This is a separate file from
   `po-records.csv` (item 2) — dedicated to historical trend data rather than individual PO
   lookups. Module 8's code-first agents reuse `po-records.csv` for PO lookups, but do not analyze
@@ -87,6 +87,9 @@ has a consistent source; no second document is required or supplied.
   Auto-Approved, Supervisor Approved, Escalated - Procurement, Escalated - Requisitioner,
   Escalated - Receiving, Rejected, Pending Vendor Response, Cleared - Not Duplicate, Retroactive
   PO Issued). Quantity-mismatch events trend upward quarter over quarter (4 → 7 → 11), driven
-  largely by one recurring vendor, so "which discrepancy type increased last quarter?" and
+  largely by one recurring vendor, so "which discrepancy type increased from Q1 to Q3 2026?" and
   "which vendor is driving that increase?" both have clear, data-grounded answers.
+
+> **Quarter boundary:** Q4 2026 data is intentionally partial and stops on November 5. Test
+> questions should bound comparisons to complete quarters.
 

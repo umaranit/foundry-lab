@@ -34,18 +34,18 @@ anything down, it's worth seeing the whole system in one place:
 
 | # | Module | What you built |
 |---|--------|-----------------|
-| 0 | [Prerequisites](/modules/00-prerequisites.md) | Confirmed Azure/Foundry access, model quota, VS Code + Foundry Toolkit, Python 3.13, and Git. |
-| 1 | [Foundry project & model setup](/modules/01-foundry-project-and-model-setup.md) | Created the `foundry-practice-project` Foundry project and deployed the `invoice-assistant-chat` chat model. |
-| 2 | [Build the agent (portal)](/modules/02-build-the-agent-portal.md) | Created the **Invoice Discrepancy Assistant** Prompt Agent with system instructions tying its behavior to Contoso's policy. |
-| 3 | [Knowledge base / grounding](/modules/03-knowledge-base-grounding.md) | Attached File Search / Foundry IQ so the agent grounds discrepancy guidance in `invoice-po-policy.md` with citations. |
-| 4 | [Tools — Built-in (Portal)](/modules/04-tools.md) | Added the Code Interpreter built-in tool and uploaded `discrepancy-trends.csv` for trend analysis. |
-| 5 | [Custom Function Tools (Code)](/modules/05-programmatic-dev-vscode-hosted-agent.md) | Added a `lookup_po_by_number` `FunctionTool` backed by `po-records.csv`, created a new agent version, and built a `conversations`/`responses`-based client. |
-| 6 | [MCP Integration (Code)](/modules/06-mcp-integration.md) | Built a local FastMCP server exposing an escalation-contact lookup grounded in policy Section 8, and wired it into the client as a `FunctionTool`. |
-| 7 | [Foundry IQ Knowledge Base (Code)](/modules/07-foundry-iq-knowledge-base.md) | Connected a Blob Storage-backed Foundry IQ knowledge base alongside File Search and tested explicitly enabled remote MCP approvals in a separate `foundry_iq_demo.py`, preserving Modules 5–6's `client.py`. |
-| 8 | [Multi-agent orchestration (Agent Framework)](/modules/08-multi-agent-orchestration-agent-framework.md) | Built a separate, code-first multi-agent system (classifier + specialists) using the Microsoft Agent Framework, contrasted with the hosted agent from Modules 2–7. |
-| 9 | [Deploy to Foundry Hosted Agents](/modules/09-deploy-to-foundry-hosted-agents.md) | Packaged a single Module 8 specialist with the Responses hosting adapter, deployed and validated a temporary Hosted Agent version, then restored prior routing when present and deleted that version. |
-| 10 | [Evaluation](/modules/10-evaluation.md) | Captured real agent responses and ran a Foundry cloud evaluation with the built-in `intent_resolution`, `relevance`, and `groundedness` evaluators (no custom evaluator). |
-| 11 | [Monitoring & tracing](/modules/11-monitoring-and-tracing.md) | Instrumented the agent with Azure Monitor OpenTelemetry and inspected traces/spans for token usage, latency, and tool calls. |
+| 0 | [Prerequisites](00-prerequisites.md) | Confirmed Azure/Foundry access, model quota, VS Code + Foundry Toolkit, Python 3.13, and Git. |
+| 1 | [Foundry project & model setup](01-foundry-project-and-model-setup.md) | Created the `foundry-practice-project` Foundry project and deployed the `invoice-assistant-chat` chat model and an embedding model. |
+| 2 | [Build the agent (portal)](02-build-the-agent-portal.md) | Created the **Invoice Discrepancy Assistant** Prompt Agent with system instructions tying its behavior to Contoso's policy. |
+| 3 | [Knowledge base / grounding](03-knowledge-base-grounding.md) | Attached File Search so the agent grounds discrepancy guidance in `invoice-po-policy.md` with citations. |
+| 4 | [Tools — Built-in (Portal)](04-tools.md) | Added the Code Interpreter built-in tool and uploaded `discrepancy-trends.csv` for trend analysis. |
+| 5 | [Custom Function Tools (Code)](05-programmatic-dev-vscode-hosted-agent.md) | Added a `lookup_po_by_number` `FunctionTool` backed by `po-records.csv`, created a new agent version, and built a `conversations`/`responses`-based client. |
+| 6 | [MCP Integration (Code)](06-mcp-integration.md) | Built a local FastMCP server exposing an escalation-contact lookup grounded in policy Section 8, and wired it into the client as a `FunctionTool`. |
+| 7 | [Foundry IQ Knowledge Base (Code)](07-foundry-iq-knowledge-base.md) | Connected a Blob Storage-backed Foundry IQ knowledge base alongside File Search and tested explicitly enabled remote MCP approvals in a separate `foundry_iq_demo.py`, preserving Modules 5–6's `client.py`. |
+| 8 | [Multi-agent orchestration (Agent Framework)](08-multi-agent-orchestration-agent-framework.md) | Built a separate, code-first multi-agent system (classifier + specialists) using the Microsoft Agent Framework, contrasted with the Prompt Agent from Modules 2–7. |
+| 9 | [Deploy to Foundry Hosted Agents](09-deploy-to-foundry-hosted-agents.md) | Packaged a single Module 8 specialist with the Responses hosting adapter, deployed and validated a temporary Hosted Agent version, then restored prior routing when present and deleted that version. |
+| 10 | [Evaluation](10-evaluation.md) | Captured real agent responses and ran a Foundry cloud evaluation with the built-in `intent_resolution`, `relevance`, and `groundedness` evaluators (no custom evaluator). |
+| 11 | [Monitoring & tracing](11-monitoring-and-tracing.md) | Instrumented the agent with Azure Monitor OpenTelemetry and inspected traces/spans for token usage, latency, and tool calls. |
 
 Take a minute to open the Foundry portal and look at the project **Overview** page — you should
 be able to point at the model deployment (Module 1), the agent and its tool list (Modules 2–7),
@@ -60,10 +60,14 @@ same system.
 | Resource | Created in | Cost pattern |
 |---|---|---|
 | Foundry project itself | Module 1 | No direct cost; it's a management container. |
-| `invoice-assistant-chat` model deployment | Module 1 | **Ongoing.** A Standard (pay-as-you-go) deployment bills per input/output token on every call — from the playground, your Module 5/6 client, and the Module 8 Agent Framework agents alike. This is almost always the largest cost driver in a real deployment, since every test query, evaluation row, and multi-agent hop consumes tokens. |
+| `invoice-assistant-chat` model deployment | Module 1 | **Ongoing.** A Global Standard (pay-as-you-go) deployment bills per input/output token on every call — from the playground, your Module 5/6 client, and the Module 8 Agent Framework agents alike. This is almost always the largest cost driver in a real deployment, since every test query, evaluation row, and multi-agent hop consumes tokens. |
+| Embedding model deployment | Module 1 (used in Module 7) | **Ongoing.** Calls for Foundry IQ indexing/retrieval consume embedding-model usage; charges depend on the deployment and usage. |
 | Stored policy file + File Search vector store | Module 3 | **One-time/negligible** for a single small Markdown document. Storage and indexing cost scale with document count/size, not query volume, so this is cheap at lab scale but worth watching if you attach a larger real policy corpus. |
 | `discrepancy-trends.csv` uploaded to Code Interpreter | Module 4 | **One-time/negligible.** A small CSV costs very little to store; Code Interpreter *session* time (the sandbox that runs generated Python) is metered separately but is brief and infrequent in this lab. |
 | Application Insights ingestion | Module 11 | **Ongoing**, and easy to underestimate. Every traced span — every model call, every tool call, every test query you sent in Module 11 — is ingested and billed by data volume. A production agent handling real invoice volume would generate meaningfully more telemetry than this lab did. |
+| Azure AI Search | Module 7 | **Ongoing if Basic is selected.** Basic is billable even while idle; the Free tier has no service charge where available. Review the selected tier's charges and delete the service during cleanup. |
+| Storage account | Module 7 | **Usage-based.** Storage and transactions can incur charges while the account and policy blob remain; delete it during cleanup. |
+| Hosted Agent compute | Module 9 | **Ongoing while a Hosted Agent version remains deployed.** Module 9 normally deletes its temporary version, but if that cleanup failed, the compute may still incur charges. |
 | Evaluation run data | Module 10 | **One-time/negligible** for the size of dataset used in this lab. The cloud evaluation run itself also consumes model tokens (the model under test *and* the judge model invoked by each evaluator), so cost scales with dataset size and how often you re-run evaluations, not with storage. |
 
 > **Note:** The Module 8 Agent Framework agents (classifier + specialists) don't add a *separate*
@@ -73,10 +77,10 @@ same system.
 > then route to a specialist), which is worth knowing before you scale a multi-agent pattern like
 > this to production traffic.
 
-The two lines to actually watch if you kept this running past the workshop are the **model
-deployment** and **Application Insights ingestion** — both scale with usage, not with how much
-you built. Everything else in this lab is effectively a fixed, small cost regardless of how long
-it sits around.
+The costs to watch if you keep this running past the workshop are model and embedding usage,
+Application Insights ingestion, and Azure AI Search if you selected the billable Basic tier.
+Storage charges depend on retained data and transactions. Hosted Agent compute can also continue
+to incur charges if Module 9's cleanup failed.
 
 ### 3. Responsible AI considerations for this scenario
 
@@ -124,15 +128,16 @@ explicitly, grounded in what you actually built:
 Delete resources in this order so dependent resources don't block deletion, then take the single
 step that guarantees nothing is left behind.
 
-1. **Delete the model deployment (Module 1).** In the Foundry portal, go to **Models +
-   endpoints**, select the `invoice-assistant-chat` deployment, and select **Delete**. This stops
-   the ongoing per-token billing immediately.
+1. **Delete the model deployments (Module 1).** In the Foundry portal, go to **Models +
+   endpoints**, select the `invoice-assistant-chat` and embedding model deployments, and select
+   **Delete**. This stops their ongoing usage billing.
 2. **Delete the agent (Module 2).** In the Foundry portal, go to **Agents**, select the
    **Invoice Discrepancy Assistant**, and select **Delete**. This removes the agent and its
    versions (including the tool configuration added in Modules 3–7).
 3. **Delete the resource group (covers everything else in one step).** Rather than hunting down
-   the Application Insights resource, the File Search vector store, the Code Interpreter upload,
-   and the project itself individually, delete the whole resource group you created in Module 1:
+   the Application Insights resource, the Azure AI Search service and Storage account from Module
+   7, the File Search vector store, the Code Interpreter upload, and the project itself
+   individually, delete the whole resource group you created in Module 1:
 
    ```powershell
    az group delete --name rg-foundry-practice --yes --no-wait
@@ -140,9 +145,11 @@ step that guarantees nothing is left behind.
 
    Deleting the resource group is simpler *and* more complete than deleting resources one at a
    time — it removes the Foundry project, the connected Application Insights resource (and all
-   ingested trace data from Module 11), every stored file and vector store (Module 3), the Code
-   Interpreter upload (Module 4), and the evaluation run data (Module 10) in a single operation,
-   with no risk of missing a resource that was created implicitly on your behalf. Replace
+   ingested trace data from Module 11), Azure AI Search and the Storage account (Module 7),
+   every stored file and vector store (Module 3), the Code Interpreter upload (Module 4), and
+   the evaluation run data (Module 10) in a single operation, with no risk of missing a resource
+   that was created implicitly on your behalf. This also removes any Hosted Agent compute left
+   behind if Module 9's cleanup failed. Replace
    `rg-foundry-practice` with your actual resource group name if you used a different one
    or a facilitator-provided shared group (in which case, confirm with your facilitator before
    deleting it — a shared group may still be in use by other participants).
@@ -157,7 +164,7 @@ This lab deliberately kept each module small enough to fit a workshop. To go dee
 half of what you built:
 
 - **[Develop AI agents on Azure](https://learn.microsoft.com/training/paths/develop-ai-agents-on-azure/)**
-  — the full Microsoft Learn path behind Modules 0–8 (hosted agents, grounding, tools, and
+  — the full Microsoft Learn path behind Modules 0–8 (Prompt Agents, grounding, tools, and
   multi-agent orchestration).
 - **[Operationalize generative AI apps](https://learn.microsoft.com/training/paths/operationalize-gen-ai-apps/)**
   — the full Microsoft Learn path behind Modules 10–11 (evaluation and monitoring/tracing).
@@ -179,11 +186,13 @@ flagged but intentionally didn't implement are worth a look:
 Before you consider this lab complete, confirm:
 
 - [ ] You can explain, in one sentence each, what Modules 0–11 added to the system.
-- [ ] You can name which of this lab's resources incur *ongoing* cost (model deployment,
-  Application Insights ingestion) versus one-time/negligible cost (stored files, evaluation data).
+- [ ] You can name which of this lab's resources incur *ongoing* cost (model/embedding usage,
+  Application Insights ingestion, Azure AI Search Basic while provisioned, and Hosted Agent
+  compute if Module 9 cleanup failed) versus usage-based or one-time/negligible cost (Storage,
+  stored files, and evaluation data).
 - [ ] You can explain why an AP automation agent must never auto-approve past the thresholds in
   policy Section 2/7, even though nothing technically prevents it.
-- [ ] You have either deleted the model deployment, agent, and resource group, or you have
+- [ ] You have either deleted the model deployments, agent, and resource group, or you have
   explicitly confirmed with your facilitator that a shared resource group should stay up.
 - [ ] Any local `server.py` or `client.py` processes from Modules 5–8 are stopped.
 

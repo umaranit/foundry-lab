@@ -9,7 +9,7 @@ specialist, and run the resulting workflow against sample queries covering all t
 
 **Prerequisites:** Modules 5–6 complete (for the `po-records.csv` data and the working Python
 environment / `.env` file in your Module 0 working folder). This module does **not** depend on
-the hosted **Invoice Discrepancy Assistant** agent itself — only on the data files and local
+the **Invoice Discrepancy Assistant** Prompt Agent itself — only on the data files and local
 environment you've already set up.
 
 ## Why this module?
@@ -26,8 +26,8 @@ environment you've already set up.
 - **By the end:** You can run sample queries for all three paths and observe the intended
   specialist handoff. You have a working local workflow, not a deployed multi-agent service.
 
-> **A separate, code-first agent system — not a new version of the hosted agent.** Every module
-> so far (2 through 6) built and extended **one** Prompt Agent called the
+> **A separate, code-first agent system — not a new version of the Prompt Agent.** Every module
+> so far (2 through 7) built and extended **one** Prompt Agent called the
 > **Invoice Discrepancy Assistant**, configured first in the portal and then given new versions
 > from code. This module is different: you are going to define **brand-new agents entirely in
 > code**, using the Microsoft Agent Framework SDK, that exist only as Python objects in your
@@ -45,14 +45,10 @@ environment you've already set up.
    `agent-framework` package:
 
    ```powershell
-   pip install agent-framework --pre
+   pip install agent-framework==1.14.0 agent-framework-orchestrations==1.1.0
    ```
 
-   > **⚠️ Verify before running:** `agent-framework` is under active development, and package
-   > name, extras, and the `--pre` flag requirement can change between releases. Confirm the
-   > current install command on the
-   > [Microsoft Agent Framework documentation](https://learn.microsoft.com/agent-framework/)
-   > or its PyPI page before you run this, and adjust if the command above no longer matches.
+   > These pinned versions were confirmed installed and tested for this module.
 
 2. Confirm you're still signed in with the Azure CLI — this module's agents authenticate with
    `AzureCliCredential` rather than the `DefaultAzureCredential` used in Modules 5–6 (both work;
@@ -104,7 +100,7 @@ and a re-exposed version of the PO lookup function:
 ```python
 """Multi-agent invoice discrepancy routing with the Microsoft Agent Framework.
 
-A separate, code-first agent system from the hosted Invoice Discrepancy Assistant built in
+A separate, code-first agent system from the Invoice Discrepancy Assistant Prompt Agent built in
 Modules 2-7. A coordinator agent classifies each discrepancy query and hands off to exactly one
 specialist agent, using agent_framework.HandoffBuilder.
 """
@@ -115,7 +111,8 @@ import os
 from pathlib import Path
 from typing import Annotated
 
-from agent_framework import Agent, HandoffBuilder, tool
+from agent_framework import Agent, tool
+from agent_framework.orchestrations import HandoffBuilder
 from agent_framework.foundry import FoundryChatClient
 from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
@@ -180,9 +177,9 @@ it's a different client class belonging to the Agent Framework SDK.
 ### 6. Define the three specialist agents
 
 Each specialist's instructions embed the actual tolerance thresholds from the relevant section of
-[`data/invoice-po-policy.md`](/data/invoice-po-policy.md) directly in the prompt. This is
+[`data/invoice-po-policy.md`](../data/invoice-po-policy.md) directly in the prompt. This is
 necessary because these are plain code-first agents with no File Search / knowledge-base grounding
-configured (unlike the hosted agent in Module 3) — if the policy isn't in the instructions, the
+configured (unlike the Prompt Agent in Module 3) — if the policy isn't in the instructions, the
 agent has no way to know it.
 
 Append to `agent_framework_workflow.py`:
@@ -284,7 +281,9 @@ threshold tier, and the required next action.
 Append the coordinator:
 
 ```python
-coordinator = client.create_agent(
+coordinator = Agent(
+    client=client,
+    name="coordinator",
     instructions=(
         "You are the routing coordinator for Contoso Finance's invoice discrepancy triage "
         "system. Read the analyst's discrepancy description and decide which ONE specialist "
@@ -297,15 +296,8 @@ coordinator = client.create_agent(
         "Call the matching handoff tool for exactly one specialist - do not try to resolve the "
         "discrepancy yourself."
     ),
-    name="coordinator",
 )
 ```
-
-> **Why `client.create_agent(...)` here but `Agent(client=..., ...)` for the specialists?** Both
-> are valid ways to construct an Agent Framework agent against the same `client`; the coordinator
-> uses the client's `create_agent` convenience method simply to match the official reference
-> exercise this module is grounded in. Functionally, `coordinator` is an agent like any other —
-> what makes it the "coordinator" is only the role `HandoffBuilder` assigns it in the next step.
 
 ### 8. Build the handoff workflow
 
@@ -317,19 +309,19 @@ workflow = (
         name="invoice_discrepancy_routing",
         participants=[coordinator, price_mismatch_agent, duplicate_invoice_agent, missing_po_agent],
     )
-    .set_coordinator(coordinator)
-    .with_interaction_mode("autonomous")  # no mid-run user prompts needed for these sample queries
+    .with_start_agent(coordinator)
+    .add_handoff(coordinator, [price_mismatch_agent, duplicate_invoice_agent, missing_po_agent])
+    .with_autonomous_mode()
     .build()
 )
 ```
 
 - `participants` lists every agent in the workflow, including the coordinator itself.
-- `set_coordinator(coordinator)` tells `HandoffBuilder` which participant classifies the request
-  and hands off — the other three only ever receive a handoff, they never initiate one.
-- `with_interaction_mode("autonomous")` runs the whole workflow to completion without pausing for
-  a human to approve each handoff. The framework's default interaction mode is a
-  human-in-the-loop mode that pauses mid-run for approval — appropriate for a production support
-  tool, but more setup than this lab's sample queries need, so we select `"autonomous"` instead.
+- `with_start_agent(coordinator)` starts the workflow with the coordinator, which classifies the
+  request.
+- `add_handoff(coordinator, [...])` defines the coordinator's handoff targets: the three
+  specialists that can handle the request.
+- `with_autonomous_mode()` runs the workflow without pausing for user input between handoffs.
 
 ### 9. Run the workflow against sample queries
 
@@ -369,7 +361,7 @@ if __name__ == "__main__":
 > was written showed `HandoffBuilder` workflows driven with `run_stream()`, handling
 > `RequestInfoEvent`s for the default human-in-the-loop interaction mode — it did not show a
 > confirmed, complete example of what `await workflow.run(query)` returns end-to-end for
-> `with_interaction_mode("autonomous")`. Before you run Step 9, check your installed
+> `.with_autonomous_mode()`. Before you run Step 9, check your installed
 > `agent-framework` version's docs or VS Code IntelliSense for the `WorkflowRunResult` (or
 > equivalent) type `workflow.run()` returns, and adjust the `print(f"RESULT: {result}")` line
 > above to correctly extract the final specialist's text response — for example, it may need to
@@ -424,9 +416,8 @@ the routing decision changes.
 ## ⚠️ Troubleshooting
 
 - **`ModuleNotFoundError: No module named 'agent_framework'`:** Confirm you ran
-  `pip install agent-framework --pre` in the **same** activated virtual environment you're using
-  to run the script, and re-check the current install command against the official docs per the
-  Step 1 callout — the package name/flags can change between pre-release versions.
+  `pip install agent-framework==1.14.0 agent-framework-orchestrations==1.1.0` in the **same**
+  activated virtual environment you're using to run the script.
 - **Authentication errors from `AzureCliCredential`:** Confirm `az login` is still valid
   (`az account show`) — unlike `DefaultAzureCredential` in Modules 5–6, `AzureCliCredential` only
   checks the Azure CLI's signed-in session, so other credential sources (like a managed identity)
@@ -439,7 +430,7 @@ the routing decision changes.
   instructions reference — `HandoffBuilder` matches handoff targets by participant name, so a
   typo or mismatch (for example `price_mismatch_agent` vs. `price-mismatch-agent`) will silently
   fail to route.
-- **Confusion about why this doesn't touch the Module 2 hosted agent at all:** That's expected —
+- **Confusion about why this doesn't touch the Module 2 Prompt Agent at all:** That's expected —
   re-read the callout at the top of this module. This is an intentionally separate, code-first
   agent system; nothing here creates a new version of, or otherwise modifies, the **Invoice
   Discrepancy Assistant**.

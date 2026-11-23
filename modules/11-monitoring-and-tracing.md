@@ -1,6 +1,6 @@
 # Module 11: Monitoring & Tracing
 
-**Objective:** Instrument the hosted **Invoice Discrepancy Assistant** with Azure Monitor
+**Objective:** Instrument the **Invoice Discrepancy Assistant** Prompt Agent with Azure Monitor
 OpenTelemetry so every model call is traced automatically, wrap each test query in one
 manually-created parent span carrying duration and token attributes, and read the resulting
 cost/latency picture back in the Foundry portal — then confirm the Module 8 Agent Framework
@@ -8,11 +8,11 @@ agents show up in the same place with no comparable instrumentation effort.
 
 **Estimated duration:** 40 minutes
 
-**Prerequisites:** Modules 6–10 complete — the hosted **Invoice Discrepancy Assistant** has the
+**Prerequisites:** Modules 6–10 complete — the **Invoice Discrepancy Assistant** Prompt Agent has the
 `lookup_po_by_number` function tool and the `get_escalation_contact` MCP tool (Module 6),
 `agent_framework_workflow.py` runs successfully (Module 8), `discrepancy-eval-seed.jsonl` exists
-(Module 10), and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`) and
-virtual environment from Module 0 are still in place.
+(Module 10), and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`, and
+`EVAL_AGENT_VERSION` recorded in Module 6) and virtual environment from Module 0 are still in place.
 
 ## Why this module?
 
@@ -33,9 +33,10 @@ virtual environment from Module 0 are still in place.
 > `OpenAIInstrumentor` fed by `project_client.telemetry.get_application_insights_connection_string()`
 > — is verified against the actual `mslearn-genaiops/docs/05-monitoring-tracing.md` reference lab.
 > Two things differ deliberately from that reference lab. First, that lab provisions a brand-new
-> Application Insights resource via `azd up`; a Foundry project already has one connected the
-> moment it's created, so this module's first step is to *confirm* that connection, not create
-> it. Second, that lab's "view an individual trace tree" step runs a custom local script,
+> Application Insights resource via `azd up`; Module 9 confirms or connects Application Insights
+> for the project before its remote invocation, so this module's Step 2 confirms that connection.
+> If it is not linked, connect it there. Second, that lab's "view an individual trace tree" step
+> runs a custom local script,
 > `python src/tests/check_traces.py`, that queries Log Analytics directly and prints a nested
 > tree in the terminal. This module doesn't reproduce that script — its exact code wasn't
 > available to verify line-by-line — and instead uses the Foundry portal's own **Traces** view
@@ -66,20 +67,19 @@ virtual environment from Module 0 are still in place.
      `openai_client` you've been using since Module 5) so every `responses.create()` call
      automatically becomes its own span, with no code changes to your existing request logic.
 
-### 2. Confirm your project already has Application Insights connected
+### 2. Confirm your project has Application Insights connected
 
 1. Unlike the reference lab, you did **not** run `azd up` or provision anything for this module —
-   a Foundry project has an Application Insights resource connected automatically the moment it's
-   created, specifically so that `project_client.telemetry.get_application_insights_connection_string()`
-   (used in Step 3) has something to return.
+   Application Insights should already be connected via Module 9 so that
+   `project_client.telemetry.get_application_insights_connection_string()` (used in Step 3) has
+   something to return. Confirm the connection now, or connect it here if needed.
 2. Confirm this in the Foundry portal: open your project, and in the left navigation select
    **Agents**, then select the **Traces** tab at the top. You should see either an empty trace
    list (if you haven't sent any instrumented requests yet — that's expected before Step 7) or a
    **Connect** prompt if no Application Insights resource is linked.
 3. If you do see a **Connect** prompt instead of a trace list: select it, choose your project's
    existing Application Insights resource (or **Create new** if none exists), and confirm the
-   connection before continuing. This is the one case where you'd do manual setup in this module,
-   and it should be rare for a project created in Module 1.
+   connection before continuing.
 
 ### 3. Write `tracing_demo.py` — imports, environment, and the telemetry bootstrap
 
@@ -91,7 +91,7 @@ the imports:
 """Trace Invoice Discrepancy Assistant runs with Azure Monitor OpenTelemetry.
 
 Builds on Module 10's capture_responses.py conversation-per-query loop against the Module 6
-hosted agent (including the local lookup_po_by_number dispatch and the MCP
+Prompt Agent (including the local lookup_po_by_number dispatch and the MCP
 get_escalation_contact dispatch). OpenAIInstrumentor auto-creates a child span for every
 underlying model call with no extra code; this script additionally wraps each query in one
 manually-created parent span carrying custom duration/token attributes, mirroring the reference
@@ -101,6 +101,7 @@ lab's per-test-prompt span pattern -- adapted here to our discrepancy-eval-seed.
 import asyncio
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -125,7 +126,11 @@ DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 SEED_FILE = DATA_DIR / "discrepancy-eval-seed.jsonl"
 SAMPLE_SIZE = 3  # keep this demo quick; raise to len(seed rows) to trace the whole seed set
 
-server_params = StdioServerParameters(command="python", args=["server.py"])
+server_params = StdioServerParameters(
+    command=sys.executable,
+    args=["server.py"],
+    env={"LAB_REPO_ROOT": os.environ["LAB_REPO_ROOT"]},
+)
 
 credential = DefaultAzureCredential()
 project_client = AIProjectClient(endpoint=project_endpoint, credential=credential)
@@ -137,6 +142,12 @@ OpenAIInstrumentor().instrument()
 
 tracer = trace.get_tracer(__name__)
 ```
+
+> `sys.executable` uses the client process's Python interpreter. `env=` explicitly passes
+> `LAB_REPO_ROOT` to the server because the full subprocess environment is not inherited by default.
+
+> The `agent_reference` in Step 4 pins `EVAL_AGENT_VERSION` to the Module 6 version, avoiding
+> Module 7's Foundry IQ approval requirement, which this script doesn't handle.
 
 > **Why `project_client` and `credential` are created at module level, not inside `main()`:** the
 > connection string has to be fetched and `configure_azure_monitor`/`OpenAIInstrumentor` have to
@@ -159,7 +170,7 @@ def load_sample_rows(limit: int) -> list[dict]:
 
 
 async def run_traced_query(openai_client, functions_dict, index: int, query: str) -> None:
-    """Send one query to the hosted agent inside one manually-created parent span.
+    """Send one query to the Prompt Agent inside one manually-created parent span.
 
     OpenAIInstrumentor (instrumented in Step 3) already wraps every responses.create() call in
     its own child span with no extra code here. This function additionally wraps the whole
@@ -181,7 +192,7 @@ async def run_traced_query(openai_client, functions_dict, index: int, query: str
         response = openai_client.responses.create(
             conversation=conversation.id,
             input=input_list,
-            extra_body={"agent_reference": {"name": AGENT_NAME, "type": "agent_reference"}},
+            extra_body={"agent_reference": {"name": AGENT_NAME, "version": os.environ["EVAL_AGENT_VERSION"], "type": "agent_reference"}},
         )
 
         while any(item.type == "function_call" for item in response.output):
@@ -207,7 +218,7 @@ async def run_traced_query(openai_client, functions_dict, index: int, query: str
             response = openai_client.responses.create(
                 conversation=conversation.id,
                 input=input_list,
-                extra_body={"agent_reference": {"name": AGENT_NAME, "type": "agent_reference"}},
+                extra_body={"agent_reference": {"name": AGENT_NAME, "version": os.environ["EVAL_AGENT_VERSION"], "type": "agent_reference"}},
             )
 
         duration_s = time.perf_counter() - start_time
@@ -322,19 +333,25 @@ if __name__ == "__main__":
    in Step 4. The only thing missing for those spans to reach Application Insights is an exporter
    pointed at your project's connection string, which is exactly what `configure_azure_monitor`
    sets up as the *global* tracer provider for the whole process — not just for this script.
-2. Open your existing `agent_framework_workflow.py` from Module 8 and temporarily add the same
-   two-line telemetry bootstrap near the top (after its existing imports, before the chat client
-   and agents are constructed), reusing the same connection string call:
+2. Open your existing `agent_framework_workflow.py` from Module 8 and temporarily add this
+   telemetry bootstrap after `load_dotenv()` and before the chat client and agents are constructed.
+   It creates its own project client and credential to retrieve the connection string; `os` and
+   `AzureCliCredential` are already imported by the Module 8 script:
 
    ```python
+   from azure.ai.projects import AIProjectClient
    from azure.monitor.opentelemetry import configure_azure_monitor
 
-   connection_string = project_client.telemetry.get_application_insights_connection_string()
-   configure_azure_monitor(connection_string=connection_string)
+   with AIProjectClient(
+       endpoint=os.environ["PROJECT_ENDPOINT"], credential=AzureCliCredential()
+   ) as pc:
+       configure_azure_monitor(
+           connection_string=pc.telemetry.get_application_insights_connection_string()
+       )
    ```
 
    Note what's **not** here: no `OpenAIInstrumentor()` and no manually-created parent span. Those
-   were only needed in `tracing_demo.py` because the hosted-agent path goes through the raw
+   were only needed in `tracing_demo.py` because the Prompt Agent path goes through the raw
    `openai` client; Agent Framework's own spans need nothing beyond the exporter.
 3. Run it:
 
@@ -343,18 +360,18 @@ if __name__ == "__main__":
    ```
 
 4. Back in the Foundry portal's **Agents → Traces** tab (Step 7), refresh after a minute and
-   confirm a new trace appears for this run, alongside the hosted-agent traces from Step 7 — same
+   confirm a new trace appears for this run, alongside the Prompt Agent traces from Step 7 — same
    Application Insights resource, same view, with Agent Framework's own span names (for the
    workflow and the specialist agent it handed off to) instead of your custom `invoice_query_*`
    names.
-5. Revert the two lines you added to `agent_framework_workflow.py` once you're done confirming
+5. Revert the telemetry bootstrap you added to `agent_framework_workflow.py` once you're done confirming
    this, so Module 8's file matches what that module describes again.
 
 ### 9. Connect what you're seeing back to Module 10
 
 Module 10 ran these same kinds of queries through the built-in evaluators and produced a quality
 score — `intent_resolution`, `relevance`, `groundedness` — per row. This module ran a small sample
-of the same seed queries through the same hosted agent and produced a *cost and latency* profile
+of the same seed queries through the same Prompt Agent and produced a *cost and latency* profile
 for each one instead. Neither view is complete on its own: a response can score well on
 `groundedness` while taking 8 seconds and consuming several thousand tokens, or respond in under a
 second while being ungrounded. Treat the Module 10 evaluation scores and this module's
@@ -373,7 +390,7 @@ a production monitoring setup would want both before shipping a prompt or agent 
   sample queries, with your `invoice_query_N` parent span and its `response.duration_s`/
   `response.total_tokens` attributes, and at least one auto-instrumented model-call child span
   nested underneath it.
-- [ ] After temporarily adding the two-line telemetry bootstrap to `agent_framework_workflow.py`
+- [ ] After temporarily adding the telemetry bootstrap to `agent_framework_workflow.py`
   and running it, a new trace for that run appears in the same **Traces** tab, confirming Module
   8's agents are traced with no `OpenAIInstrumentor`/manual-span work required.
 
@@ -398,8 +415,10 @@ full set — does it correspond to a query that needed a tool call (`lookup_po_b
   re-check that `configure_azure_monitor(connection_string=...)` ran (no exception at startup)
   and that the connection string came from the same project you're viewing in the portal.
 - **`tracing_demo.py` hangs after printing nothing:** The same MCP-subprocess cause as Modules 6
-  and 9 — confirm `python server.py` still runs cleanly on its own from the same activated-venv
-  terminal.
+  and 10 — confirm `python server.py` still runs cleanly on its own, that `fastmcp` and `mcp` are
+  installed in the client interpreter, and that `env=` passes `LAB_REPO_ROOT` to the server.
+- **`tracing_demo.py` stalls or behaves unexpectedly:** Check that `EVAL_AGENT_VERSION` is set in
+  `.env` to the version recorded in Module 6, not a later version with Foundry IQ approval.
 - **Token attributes never show up on any parent span:** `usage` may not be populated on every
   Responses API object shape this lab uses — the `getattr(response, "usage", None)` guard in
   Step 4 means your script still runs and prints a duration either way; this is flagged as
@@ -411,6 +430,6 @@ full set — does it correspond to a query that needed a tool call (`lookup_po_b
   correctly wasn't verified against this lab's data shapes — but if you want to go further, the
   real script is in the `mslearn-genaiops` repo at `src/tests/check_traces.py` and is a reasonable
   reference for building a local trace viewer for your own project.
-- **Forgot to revert the two lines added to `agent_framework_workflow.py` in Step 8:** harmless to
+- **Forgot to revert the telemetry bootstrap added to `agent_framework_workflow.py` in Step 8:** harmless to
   leave in (it just re-points the same exporter at the same resource every run), but remove them
   if you want that file to match Module 8's description exactly again.

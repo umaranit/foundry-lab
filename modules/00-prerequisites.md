@@ -36,10 +36,16 @@ groups and Microsoft Foundry resources.
    az account show --output table
    ```
 
-3. Confirm you have **Contributor** (or a role that includes `Microsoft.CognitiveServices/*` and
-   `Microsoft.MachineLearningServices/*` write permissions) on the subscription or a resource
-   group you'll use for this lab. If you're not sure, ask your workshop facilitator or subscription
-   administrator now — this is the single most common blocker in live workshops.
+3. Confirm you have the roles needed for the full workshop. Request any missing role from your
+   workshop facilitator or subscription administrator now:
+
+   | Role | Scope | Needed for |
+   |---|---|---|
+   | **Contributor** | Subscription or resource group | Creating the project and model deployments in Module 1, plus resources in later modules. |
+   | **Azure AI User / Foundry User** | Foundry project | Project-level data-plane access, including calling agents via SDK from Module 5 onward. |
+   | **Foundry Project Manager** | Foundry project | Hosted Agent deployment in Module 9. |
+
+   Contributor permissions alone do not provide the project-level access needed to call agents.
 4. If you have access to multiple subscriptions, set the one you'll use for the lab as the
    default:
 
@@ -58,15 +64,20 @@ groups and Microsoft Foundry resources.
 
 ### 3. Check model quota
 
-The lab deploys a chat model in Module 1. Quota approval can take time, so check it now rather
-than during Module 1.
+The lab deploys a chat model and an embedding model in Module 1. Quota approval can take time, so
+check it now rather than during Module 1.
 
 1. In the Foundry portal, go to **Management center** > **Quota** (or the equivalent quota page
    for your portal version).
-2. Confirm you have available quota for a GPT-4o-class chat model deployment in your chosen
-   region.
-3. If quota is insufficient, submit a quota increase request now so it has time to be approved
+2. Check the model catalog for a current, non-deprecated chat model rather than defaulting to
+   `gpt-4o` or `gpt-4o-mini`, and confirm available quota for it in your chosen region.
+3. Confirm available quota for an embedding model deployment, such as `text-embedding-3-small`,
+   in your chosen region.
+4. If quota is insufficient, submit a quota increase request now so it has time to be approved
    before Module 1.
+
+> Check [Microsoft's model retirement schedule](https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule)
+> before each delivery to confirm model availability and retirement dates.
 
 ### 4. Install Visual Studio Code
 
@@ -119,9 +130,10 @@ Set-Location "$HOME\foundry-practice"
 
 ### 10. Preview the sample data you'll use later
 
-This lab uses three sample data files — a policy document, a PO records CSV, and an evaluation
-dataset — starting in Module 3. You don't need to create or download anything yet; see
-[data/README.md](/data/README.md) for what each file will contain and which module
+This lab uses four sample data files — a policy document, a PO records CSV, a discrepancy-trends
+CSV, and an evaluation seed file — starting in Module 3. You don't need to create or download
+anything yet; see
+[data/README.md](../data/README.md) for what each file will contain and which module
 introduces it.
 
 ## ✅ Checkpoint / Validate

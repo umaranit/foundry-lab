@@ -23,35 +23,35 @@ Modules 7–12 on day two: ~240 minutes, excluding breaks).
 
 ## How this lab is organized
 
-The [modules/](/modules/) and [data/](/data/) folders are directly at the repository root.
-Each module lives in [modules/](/modules/) as its own Markdown file, numbered in the order
-you should complete them. Modules 5–7 extend the hosted agent created in Module 2: Module 5
+The [modules/](modules/) and [data/](data/) folders are directly at the repository root.
+Each module lives in [modules/](modules/) as its own Markdown file, numbered in the order
+you should complete them. Modules 5–7 extend the Prompt Agent created in Module 2: Module 5
 builds the conversations/responses `client.py`, Module 6 adds async local MCP integration, and
 Module 7 uses a separate policy-retrieval demo for Foundry IQ and remote MCP approvals, leaving
 that client unchanged. Module 8 then introduces a separate, code-first Agent Framework system
 running locally. Module 9 deploys a single specialist to Foundry's managed Hosted Agent container runtime, distinct from the Prompt Agent
 in Modules 2–7. Modules 10–12 cover evaluation, monitoring/tracing, and wrap-up.
 Sample data referenced throughout the lab is described in
-[data/README.md](/data/README.md). Facilitators running this as an instructor-led workshop
-should also review [FACILITATOR-NOTES.md](/FACILITATOR-NOTES.md).
+[data/README.md](data/README.md). Facilitators running this as an instructor-led workshop
+should also review [FACILITATOR-NOTES.md](FACILITATOR-NOTES.md).
 
 ## Modules
 
 | # | Module | Objective | Est. time |
 |---|--------|-----------|-----------|
-| 0 | [Prerequisites](/modules/00-prerequisites.md) | Set up the Azure subscription, Foundry portal access, VS Code + Foundry Toolkit extension, Python, and Git needed for every later module. | 15 min |
-| 1 | [Foundry project & model setup](/modules/01-foundry-project-and-model-setup.md) | Create a Foundry project and deploy a chat model, understanding the model selection and deployment options available in the portal. | 20 min |
-| 2 | [Build the agent (portal)](/modules/02-build-the-agent-portal.md) | Create the Invoice Discrepancy Assistant as a Prompt Agent, write its system instructions, and test it in the playground. | 25 min |
-| 3 | [Knowledge base / grounding — File Search](/modules/03-knowledge-base-grounding.md) | Upload the invoice/PO policy document and ground the agent's discrepancy-handling answers in it using File Search. | 30 min |
-| 4 | [Tools — Built-in (Portal)](/modules/04-tools.md) | Add the Code Interpreter built-in tool to the agent via the Foundry portal so it can analyze discrepancy trends. (File Search was already added in Module 3.) | 15 min |
-| 5 | [Custom Function Tools (Code)](/modules/05-programmatic-dev-vscode-hosted-agent.md) | Define a FunctionTool for "look up PO by number", create a new agent version with `project_client.agents.create_version`, and build a client using `openai_client.conversations.create()` / `openai_client.responses.create()` to call it. | 45 min |
-| 6 | [MCP Integration (Code)](/modules/06-mcp-integration.md) | Build a local MCP server with FastMCP exposing an escalation-contact lookup tool grounded in the policy's Section 8 table, connect to it from the Module 5 client via the `mcp` package's `stdio_client`/`ClientSession` (wrapped as a `FunctionTool`, not an `MCPTool`/approval loop — that only applies to remote MCP servers), and convert the client to async. | 45 min |
-| 7 | [Foundry IQ Knowledge Base (Code)](/modules/07-foundry-iq-knowledge-base.md) | Provision Azure AI Search and Blob Storage, connect Foundry IQ alongside File Search, require approval via the VS Code agent builder, and test approval/denial in a separate `foundry_iq_demo.py`. | 45 min |
-| 8 | [Multi-agent orchestration with Microsoft Agent Framework](/modules/08-multi-agent-orchestration-agent-framework.md) | Define specialized code-first agents and an orchestrator using the Microsoft Agent Framework SDK, and contrast this code-first approach with the Prompt Agent from Modules 2–7. | 50 min |
-| 9 | [Deploy to Foundry Hosted Agents](/modules/09-deploy-to-foundry-hosted-agents.md) | Package a single Module 8 specialist with the Responses hosting adapter, deploy with the Python SDK, wait for an active version, route and invoke it, then restore routing and delete the temporary version. | 45 min |
-| 10 | [Evaluation](/modules/10-evaluation.md) | Capture real hosted-agent responses against a seed dataset and run the built-in `intent_resolution`, `relevance`, and `groundedness` cloud evaluators (no custom evaluator). | 45 min |
-| 11 | [Monitoring & tracing](/modules/11-monitoring-and-tracing.md) | Wire up Application Insights / Azure Monitor, enable distributed tracing, and inspect traces/spans for token usage, latency, and tool calls. | 40 min |
-| 12 | [Wrap-up & governance](/modules/12-wrapup-governance.md) | Review cost awareness and responsible AI considerations, clean up resources, and find next-step learning paths. | 15 min |
+| 0 | [Prerequisites](modules/00-prerequisites.md) | Set up the Azure subscription, Foundry portal access, VS Code + Foundry Toolkit extension, Python, and Git needed for every later module. | 15 min |
+| 1 | [Foundry project & model setup](modules/01-foundry-project-and-model-setup.md) | Create a Foundry project and deploy a chat model, understanding the model selection and deployment options available in the portal. | 20 min |
+| 2 | [Build the agent (portal)](modules/02-build-the-agent-portal.md) | Create the Invoice Discrepancy Assistant as a Prompt Agent, write its system instructions, and test it in the playground. | 25 min |
+| 3 | [Knowledge base / grounding — File Search](modules/03-knowledge-base-grounding.md) | Upload the invoice/PO policy document and ground the agent's discrepancy-handling answers in it using File Search. | 30 min |
+| 4 | [Tools — Built-in (Portal)](modules/04-tools.md) | Add the Code Interpreter built-in tool to the agent via the Foundry portal so it can analyze discrepancy trends. (File Search was already added in Module 3.) | 15 min |
+| 5 | [Custom Function Tools (Code)](modules/05-programmatic-dev-vscode-hosted-agent.md) | Define a FunctionTool for "look up PO by number", create a new agent version with `project_client.agents.create_version`, and build a client using `openai_client.conversations.create()` / `openai_client.responses.create()` to call it. | 45 min |
+| 6 | [MCP Integration (Code)](modules/06-mcp-integration.md) | Build a local MCP server with FastMCP exposing an escalation-contact lookup tool grounded in the policy's Section 8 table, connect to it from the Module 5 client via the `mcp` package's `stdio_client`/`ClientSession` (wrapped as a `FunctionTool`, not an `MCPTool`/approval loop — that only applies to remote MCP servers), and convert the client to async. | 45 min |
+| 7 | [Foundry IQ Knowledge Base (Code)](modules/07-foundry-iq-knowledge-base.md) | Provision Azure AI Search and Blob Storage, connect Foundry IQ alongside File Search, require approval via the VS Code agent builder, and test approval/denial in a separate `foundry_iq_demo.py`. | 45 min |
+| 8 | [Multi-agent orchestration with Microsoft Agent Framework](modules/08-multi-agent-orchestration-agent-framework.md) | Define specialized code-first agents and an orchestrator using the Microsoft Agent Framework SDK, and contrast this code-first approach with the Prompt Agent from Modules 2–7. | 50 min |
+| 9 | [Deploy to Foundry Hosted Agents](modules/09-deploy-to-foundry-hosted-agents.md) | Package a single Module 8 specialist with the Responses hosting adapter, deploy with the Python SDK, wait for an active version, route and invoke it, then restore routing and delete the temporary version. | 45 min |
+| 10 | [Evaluation](modules/10-evaluation.md) | Capture real Prompt Agent responses against a seed dataset and run the built-in `intent_resolution`, `relevance`, and `groundedness` cloud evaluators (no custom evaluator). | 45 min |
+| 11 | [Monitoring & tracing](modules/11-monitoring-and-tracing.md) | Wire up Application Insights / Azure Monitor, enable distributed tracing, and inspect traces/spans for token usage, latency, and tool calls. | 40 min |
+| 12 | [Wrap-up & governance](modules/12-wrapup-governance.md) | Review cost awareness and responsible AI considerations, clean up resources, and find next-step learning paths. | 15 min |
 
 **Total:** ~435 minutes (7 hours 15 minutes), excluding breaks and additional provisioning buffers.
 

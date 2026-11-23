@@ -32,7 +32,7 @@ This is a Prompt Agent (AgentKind.PROMPT) - server-managed by Foundry, not to be
 
 ### 2. Create the Prompt Agent
 
-1. Choose the **Prompt agent** type (a server-hosted agent configured declaratively in the
+1. Choose the **Prompt agent** type (a service-managed agent configured declaratively in the
    portal — as opposed to the code-first agents you'll build in Module 8).
 2. Configure the basics:
    - **Name:** `Invoice Discrepancy Assistant`
@@ -79,7 +79,7 @@ This agent is a **Prompt Agent**: its definition (instructions, model, and — s
 Modules 3–7 — knowledge and tools) lives in the Foundry service and is configured here in the
 portal (and, from Module 5 onward, extended via code as new agent versions). In Module 8, you'll
 build a **separate, code-first** multi-agent system with the Microsoft Agent Framework SDK. Keep
-this distinction in mind — Modules 2–7 are all about this one hosted agent; Module 8 is a
+this distinction in mind — Modules 2–7 are all about this one Prompt Agent; Module 8 is a
 different, code-defined system that happens to address the same scenario.
 
 ### 5. Test in the playground
@@ -138,7 +138,7 @@ lead-in to Module 3.
   project where you deployed the model.
 - **Agent gives a confident-sounding but made-up PO lookup result:** This is expected at this
   stage since no tool is attached yet — it's a good discussion point for why grounding (Module 3)
-  and tools (Module 4) matter, but you may want to tighten the instructions further if it
+  and tools (Module 5) matter, but you may want to tighten the instructions further if it
   happens too often even with the caveat included above.
 - **Instructions field rejects your text / truncates it:** Some portal versions cap system
   instruction length. If you hit a limit, trim guidance that will be covered by the policy

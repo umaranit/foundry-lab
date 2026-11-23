@@ -19,9 +19,8 @@ deployment. You also need:
   `main.py` via `ResponsesHostServer`.
 - Azure CLI sign-in and the **Foundry Project Manager** role at project scope. Confirm your
   project supports Hosted Agents in its region and has available compute/model capacity.
-- Application Insights connected to the project and permission to read cloud traces. Complete
-  [Connect Application Insights for agent tracing](https://learn.microsoft.com/azure/foundry/tutorials/quickstart-create-foundry-resources#connect-application-insights-for-agent-tracing)
-  before the first remote invocation; do not wait until Module 11.
+- Permission to confirm or connect Application Insights for the project and to read cloud traces.
+  Complete Step 2 before the first remote invocation.
 - Permission to upload the lab's fictional PO data. Do not substitute real financial records
   or upload credentials.
 
@@ -77,7 +76,14 @@ The deployment uses **remote build**, not a locally built Docker image. It does 
 Foundry project or model deployment. Hosted compute is billable separately from model usage,
 and must be cleaned up even if the request or provisioning fails.
 
-### 2. Create an isolated working folder and configure settings
+### 2. Confirm or connect Application Insights
+
+1. In the Foundry portal, open your project, select **Agents**, then the **Traces** tab.
+2. If you see a **Connect** prompt, select it, choose the project's existing Application
+   Insights resource (or **Create new** if none exists), and confirm the connection.
+3. Confirm the Traces view is available before the first remote invocation.
+
+### 3. Create an isolated working folder and configure settings
 
 1. In your workshop working folder, create a **new** folder, separate from Module 8's script.
    The following commands are PowerShell:
@@ -122,7 +128,8 @@ and must be cleaned up even if the request or provisioning fails.
 4. Create `src\requirements.txt`:
 
    ```text
-   agent-framework
+   agent-framework==1.14.0
+   agent-framework-orchestrations==1.1.0
    agent-framework-foundry-hosting
    azure-ai-projects>=2.3.0
    azure-identity
@@ -144,7 +151,7 @@ and must be cleaned up even if the request or provisioning fails.
    > `create_version_from_code`. If a package requires a prerelease, use the current documented
    > installation instructions rather than guessing an adapter API.
 
-### 3. Implement the single-specialist service entry point
+### 4. Implement the single-specialist service entry point
 
 Create `src\main.py` with the following complete content. This keeps Module 8's lookup and
 price-mismatch instructions, but replaces `LAB_REPO_ROOT` with a path relative to the packaged
@@ -262,7 +269,7 @@ and permissions reference if runtime model access is denied.
 > workflow. The tool reads fictional data and recommends actions; it does not approve payments
 > or open Procurement cases.
 
-### 4. Validate the hosting adapter locally before uploading
+### 5. Validate the hosting adapter locally before uploading
 
 1. From `module09-hosted`, with its environment active, start the HTTP host:
 
@@ -319,7 +326,7 @@ and permissions reference if runtime model access is denied.
    separate, server-side concern checked via the build logs (see **Remote build fails** in
    Troubleshooting).
 
-### 5. Package, deploy, invoke, and clean up with the Python SDK
+### 6. Package, deploy, invoke, and clean up with the Python SDK
 
 Create `deploy_hosted_agent.py` in `module09-hosted`, **not** in `src`. The layout should now be:
 
@@ -563,7 +570,7 @@ Before running, understand the lifecycle:
 > That is not a persistent working deployment. Inspect it in Foundry; this module claims
 > temporary-version cleanup, not deletion of the agent record or every project resource.
 
-### 6. Run the cloud round trip and validate the response
+### 7. Run the cloud round trip and validate the response
 
 1. Confirm the local host is stopped, your virtual environment is active, and `.env` names
    your **dedicated** lab agent. In VS Code, open `deploy_hosted_agent.py` and use
@@ -575,7 +582,7 @@ Before running, understand the lifecycle:
    and version deletion, without changing the Python code.
 
    > **Why pause?** A normal `python .\deploy_hosted_agent.py` run immediately deletes the
-   > temporary version after printing the answer. Use this debugger pause to complete Step 7's
+   > temporary version after printing the answer. Use this debugger pause to complete Step 8's
    > portal checks while the version is still active. Do not stop the debugger or close VS Code
    > while paused; you must resume execution afterward so cleanup runs.
 
@@ -583,27 +590,27 @@ Before running, understand the lifecycle:
    update, and response. Record the **agent name and version** immediately for recovery if the
    terminal is interrupted. Keep the printed original endpoint configuration until cleanup
    is confirmed.
-4. Compare the hosted answer with **every expected fact in Step 4's table**, especially the
+4. Compare the hosted answer with **every expected fact in Step 5's table**, especially the
    `$600` impact and Procurement tier. Inspect available hosted traces for the PO lookup.
    `"active"` validates startup, not policy correctness or tool execution; a fluent but
    unsupported answer is not a successful lab result.
 5. Once the script reports `"active"`, prints the response, and pauses at the cleanup
-   breakpoint, leave it paused for Step 7. The breakpoint can also be reached after a failure:
+   breakpoint, leave it paused for Step 8. The breakpoint can also be reached after a failure:
    if activation or invocation failed, do not count this as success. Resume with **Continue**
-   (**F5**) to let cleanup run, then follow Step 8's failure-path checks.
+   (**F5**) to let cleanup run, then follow Step 9's failure-path checks.
 
 The response is a sample outcome, not a guarantee of deterministic model behavior. If the
 answer misses a threshold, first verify the instructions, actual tool result, and invoice
 quantity before changing prompts or trying another deployment.
 
-### 7. Verify the active deployment in the Foundry portal
+### 8. Verify the active deployment in the Foundry portal
 
 1. While the successful run is paused before cleanup, open the
    [Foundry portal](https://ai.azure.com). Open the project matching `FOUNDRY_PROJECT_ENDPOINT`
    in `.env`, then navigate to **Agents** > **<agent name>** > **Versions** tab.
    Use the dedicated hosted agent name from `FOUNDRY_HOSTED_AGENT_NAME` in `.env`, not the
    earlier **Invoice Discrepancy Assistant** Prompt Agent.
-2. Refresh the versions list and find the **new version number recorded in Step 6**. Confirm
+2. Refresh the versions list and find the **new version number recorded in Step 7**. Confirm
    its status is **Active**, then open that version's details and visually verify the
    requested configuration:
 
@@ -626,13 +633,13 @@ quantity before changing prompts or trying another deployment.
 4. Return to VS Code promptly and select **Continue** (**F5**) to run cleanup. Do not stop the
    debugger. Expect `Original agent endpoint restored` if a prior configuration existed,
    followed by `Confirmed deletion of hosted agent version <version>`. Remove the breakpoint
-   after the run and proceed to Step 8; hosted compute remains billable while paused.
+   after the run and proceed to Step 9; hosted compute remains billable while paused.
 
-### 8. Confirm cleanup, including failure paths
+### 9. Confirm cleanup, including failure paths
 
 1. In the [Foundry portal](https://ai.azure.com), open your project > **Agents** >
    **<agent name>** > **Versions** tab, using `FOUNDRY_HOSTED_AGENT_NAME` from `.env`.
-   Refresh and confirm the temporary version recorded in Step 6 is gone. If a prior endpoint
+   Refresh and confirm the temporary version recorded in Step 7 is gone. If a prior endpoint
    configuration existed, open the same agent's endpoint configuration and confirm the prior
    version selection/protocol configuration is restored.
 2. Verify that the existing **Invoice Discrepancy Assistant** Prompt Agent and Module 8's

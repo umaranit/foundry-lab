@@ -200,6 +200,8 @@ Reserve 5–10 extra minutes for subprocess/venv or async mistakes, not Azure pr
   uses the terminal's `python`, not automatically VS Code's selected interpreter.
 - Escalation lookup keys and the parser must match the policy's Section 8 table structure.
   A directly launched stdio server waiting silently for a client is expected, not a hang.
+- Capture the printed Module 6 version in `.env` as `EVAL_AGENT_VERSION` before Module 7 runs:
+  Module 7's latest version requires approval, which the Module 10–11 scripts do not handle.
 
 ### Talking points
 - FastMCP exposes the tool; the `mcp` package's `stdio_client` and `ClientSession` discover and

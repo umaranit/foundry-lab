@@ -31,17 +31,18 @@ environment, `.env`, File Search vector store, and Module 6 client.
 
 > **Sequence note:** This module follows MCP Integration and builds on Modules 5–6's
 > conversations/responses client pattern, but puts the new knowledge-and-approval demonstration
-> in **`foundry_iq_demo.py`**. Do not edit or replace **`client.py`**: preserve it for reuse in
-> Module 9. The demo retrieves the existing agent with `agents.get`; it does not create an agent
-> version or replace its tool list. It is a policy-retrieval demo, not a replacement for Module
-> 6's async PO-lookup and local MCP function dispatcher.
+> in **`foundry_iq_demo.py`**. Do not edit or replace **`client.py`**: preserve it as a reference
+> for its client pattern in Module 10. The demo retrieves the existing agent with `agents.get`;
+> it does not create an agent version or replace its tool list. It is a policy-retrieval demo,
+> not a replacement for Module 6's async PO-lookup and local MCP function dispatcher.
 
 **Verified reference:** [Integrate an AI agent with Foundry IQ](https://microsoftlearning.github.io/mslearn-ai-agents/Instructions/Exercises/04-integrate-agent-with-foundry-iq.html)
 (`mslearn-ai-agents/Instructions/Exercises/04-integrate-agent-with-foundry-iq.html`).
 The reference uses product documents; here you reuse the fictional invoice/PO policy from
 Module 3. Follow the portal and approval flow below rather than introducing a different
-retrieval API. The reference's preview/active-development caveat applies: portal labels,
-regional availability, and supported model choices can change.
+retrieval API. Foundry IQ knowledge bases reached general availability in June 2026. Specific
+tiers or features (for example, Serverless), regional availability, and portal labels may still
+change.
 
 ## Steps
 
@@ -419,8 +420,8 @@ handles zero, one, multiple, and repeated requests regardless of which pattern y
    enterprise knowledge sources, evaluate Foundry IQ's agentic retrieval against representative
    questions, costs, and governance requirements.
 5. Leave File Search and Foundry IQ connected with the knowledge-base approval setting saved.
-   Keep `foundry_iq_demo.py` separately and `client.py` unchanged for Module 9. Do not rerun
-   `client.py` during this comparison: its `create_version` call uses the Modules 5–6 tool list,
+   Keep `foundry_iq_demo.py` separately and `client.py` unchanged as a reference for Module 10.
+   Do not rerun `client.py` during this comparison: its `create_version` call uses the Modules 5–6 tool list,
    which does not include Foundry IQ. Later reuse may require reconnecting the knowledge base
    and restoring approval if you want to test Foundry IQ again.
 6. Note the Search service, Storage account/container, and model deployments you added for
@@ -443,8 +444,8 @@ handles zero, one, multiple, and repeated requests regardless of which pattern y
   per response and repeated approval rounds.
 - [ ] You compared the same question against the File Search-only baseline, checking policy
   correctness, citation detail, actual tool use, and approval overhead.
-- [ ] Modules 5–6's `client.py` is unchanged for Module 9; the demo retrieves rather than
-  recreates the agent. You can distinguish remote MCP approval from local MCP function dispatch.
+- [ ] Modules 5–6's `client.py` is unchanged as a reference for Module 10; the demo retrieves
+  rather than recreates the agent. You can distinguish remote MCP approval from local MCP function dispatch.
 
 ## 🚀 Try it yourself
 

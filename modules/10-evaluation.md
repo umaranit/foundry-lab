@@ -1,6 +1,6 @@
 # Module 10: Evaluation
 
-**Objective:** Capture real responses from the hosted **Invoice Discrepancy Assistant** against a
+**Objective:** Capture real responses from the **Invoice Discrepancy Assistant** Prompt Agent against a
 seed set of discrepancy queries, then run a Foundry cloud evaluation with the verified built-in
 **intent_resolution**, **relevance**, and **groundedness** evaluators, and interpret the results.
 
@@ -8,8 +8,8 @@ seed set of discrepancy queries, then run a Foundry cloud evaluation with the ve
 
 **Prerequisites:** Modules 5–6 complete — the **Invoice Discrepancy Assistant** has a version with
 the `lookup_po_by_number` function tool, the `get_escalation_contact` MCP tool, File Search, and
-Code Interpreter, and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`)
-and virtual environment from Module 0 are still in place.
+Code Interpreter, and your `.env` file (`PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, `LAB_REPO_ROOT`,
+and `EVAL_AGENT_VERSION` recorded in Module 6) and virtual environment from Module 0 are still in place.
 
 ## Why this module?
 
@@ -38,7 +38,7 @@ and virtual environment from Module 0 are still in place.
 
 ### 1. Review the seed dataset
 
-1. Open [`data/discrepancy-eval-seed.jsonl`](/data/discrepancy-eval-seed.jsonl) in VS Code.
+1. Open [`data/discrepancy-eval-seed.jsonl`](../data/discrepancy-eval-seed.jsonl) in VS Code.
 2. Note the shape: one JSON object per line, each with exactly two fields, `query` and
    `ground_truth` — for example:
 
@@ -48,12 +48,15 @@ and virtual environment from Module 0 are still in place.
 
 3. Note the coverage: all four discrepancy types (price mismatch, quantity mismatch, duplicate
    invoice, missing PO) across their different tolerance tiers from
-   [`invoice-po-policy.md`](/data/invoice-po-policy.md), plus two "trick" rows — one where the
+   [`invoice-po-policy.md`](../data/invoice-po-policy.md), plus two "trick" rows — one where the
    invoice matches the PO exactly (no discrepancy at all) and one that tests the Section 7
    approval-authority limits rather than a discrepancy tolerance — and one row that exercises the
    Module 6 `get_escalation_contact` tool directly.
 4. **There is no `response` field yet.** A real evaluation needs a real captured answer, not just
    the expected one — that's what Step 3 produces.
+
+> If you change this seed file, regenerate `discrepancy-eval-dataset.jsonl` by re-running
+> `capture_responses.py`; the dataset is derived from the seed queries and ground truths.
 
 > **Why 15 rows is enough for this lab, but wouldn't be for production:** the built-in evaluators
 > report averages and pass rates, so a handful of rows is enough to see the mechanism work and
@@ -63,8 +66,8 @@ and virtual environment from Module 0 are still in place.
 
 ### 2. Decide what's under test (no new installs needed)
 
-1. This module evaluates the Module 6 hosted **Invoice Discrepancy Assistant** — not the Module 8
-   Agent Framework orchestrator. The hosted agent already has grounding and both tools, and the
+1. This module evaluates the Module 6 **Invoice Discrepancy Assistant** Prompt Agent — not the Module 8
+   Agent Framework orchestrator. The Prompt Agent already has grounding and both tools, and the
    capture script in Step 3 reuses the Module 5/6 `conversations`/`responses` client pattern
    directly. Evaluating the Module 8 orchestrator instead would mean adapting the capture step to
    its different (non-`conversations`/`responses`) invocation pattern, which this module doesn't
@@ -81,7 +84,7 @@ and virtual environment from Module 0 are still in place.
 ### 3. Write the capture script
 
 The seed file has no `response` field, and every built-in evaluator in this module needs one. This
-script sends each seed `query` to the live hosted agent and records what it actually answers.
+script sends each seed `query` to the live Prompt Agent and records what it actually answers.
 
 Create a file named `capture_responses.py` in your working folder:
 
@@ -89,7 +92,7 @@ Create a file named `capture_responses.py` in your working folder:
 """Capture real Invoice Discrepancy Assistant responses for evaluation.
 
 Reads discrepancy-eval-seed.jsonl (query + ground_truth only), sends each query to the
-hosted agent using the same conversations/responses client pattern as Modules 5-6 (including
+Prompt Agent using the same conversations/responses client pattern as Modules 5-6 (including
 the local lookup_po_by_number dispatch and the MCP get_escalation_contact dispatch added in
 Module 6), and writes enriched query/response/ground_truth triples to
 discrepancy-eval-dataset.jsonl -- the only file this module's evaluation step can read.
@@ -98,6 +101,7 @@ discrepancy-eval-dataset.jsonl -- the only file this module's evaluation step ca
 import asyncio
 import json
 import os
+import sys
 from pathlib import Path
 
 from azure.ai.projects import AIProjectClient
@@ -118,13 +122,21 @@ DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 SEED_FILE = DATA_DIR / "discrepancy-eval-seed.jsonl"
 DATASET_FILE = DATA_DIR / "discrepancy-eval-dataset.jsonl"
 
-server_params = StdioServerParameters(command="python", args=["server.py"])
+server_params = StdioServerParameters(
+    command=sys.executable,
+    args=["server.py"],
+    env={"LAB_REPO_ROOT": os.environ["LAB_REPO_ROOT"]},
+)
 ```
+
+> `sys.executable` uses the client process's Python interpreter. `env=` explicitly passes
+> `LAB_REPO_ROOT` to the server because the full subprocess environment is not inherited by default.
 
 > **Why reference the agent by `AGENT_NAME` instead of calling `create_version` again?** This
 > script only needs to *ask* the already-deployed agent questions — it doesn't need to change its
-> configuration. `agent_reference` in Step 5 below accepts the agent's name directly, resolving to
-> its latest version, so there's no need to redefine `PromptAgentDefinition` or its tools here.
+> configuration. The `agent_reference` in Step 4 pins `EVAL_AGENT_VERSION` to the Module 6
+> version, avoiding Module 7's Foundry IQ approval requirement, which this script doesn't handle.
+> There's no need to redefine `PromptAgentDefinition` or its tools here.
 
 ### 4. Load the seed rows and capture one response per query
 
@@ -137,7 +149,7 @@ def load_seed_rows() -> list[dict]:
 
 
 async def capture_response(openai_client, functions_dict, agent_name: str, query: str) -> str:
-    """Send one query to the hosted agent and return its final output_text.
+    """Send one query to the Prompt Agent and return its final output_text.
 
     Structurally the same function-call handling loop as Module 6's client.py, but driven by
     a single query instead of an interactive input() loop, and using a fresh conversation per
@@ -154,7 +166,7 @@ async def capture_response(openai_client, functions_dict, agent_name: str, query
     response = openai_client.responses.create(
         conversation=conversation.id,
         input=input_list,
-        extra_body={"agent_reference": {"name": agent_name, "type": "agent_reference"}},
+        extra_body={"agent_reference": {"name": agent_name, "version": os.environ["EVAL_AGENT_VERSION"], "type": "agent_reference"}},
     )
 
     while any(item.type == "function_call" for item in response.output):
@@ -180,7 +192,7 @@ async def capture_response(openai_client, functions_dict, agent_name: str, query
         response = openai_client.responses.create(
             conversation=conversation.id,
             input=input_list,
-            extra_body={"agent_reference": {"name": agent_name, "type": "agent_reference"}},
+            extra_body={"agent_reference": {"name": agent_name, "version": os.environ["EVAL_AGENT_VERSION"], "type": "agent_reference"}},
         )
 
     return response.output_text
@@ -252,15 +264,14 @@ if __name__ == "__main__":
 
 2. Confirm the counter reaches `Captured 15/15 responses` and the script prints
    `Wrote 15 rows to ...\data\discrepancy-eval-dataset.jsonl`.
-3. Open [`data/discrepancy-eval-dataset.jsonl`](/data/discrepancy-eval-dataset.jsonl) (it's
+3. Open [`data/discrepancy-eval-dataset.jsonl`](../data/discrepancy-eval-dataset.jsonl) (it's
    generated next to the seed file) and spot-check two or three rows — each should now have
    `query`, `response`, and `ground_truth`, with `response` containing the agent's real answer
    text, not a placeholder.
 
-> **Re-run this script any time you change the agent.** The capture step has no memory of which
-> agent version produced `discrepancy-eval-dataset.jsonl` — if you create another agent version
-> after this (a new instructions tweak, an added tool), the evaluation in the rest of this module
-> will silently score the *old* responses unless you re-run `capture_responses.py` first.
+> **Re-run this script when you recreate the Module 6 agent version.** Update
+> `EVAL_AGENT_VERSION` to the new Module 6 version first: creating another version alone doesn't
+> change the pinned target. Otherwise the evaluation will score the *old* captured responses.
 
 ### 6. Write the evaluation script — upload the dataset
 
@@ -323,7 +334,7 @@ def upload_dataset() -> str:
 
 > **`model_deployment_name` here is the judge model, not a new deployment.** This lab deploys one
 > chat model in Module 1 (`MODEL_DEPLOYMENT`), and this module reuses it both as the system under
-> test (via the hosted agent in `capture_responses.py`) and as the judge model the built-in
+> test (via the Prompt Agent in `capture_responses.py`) and as the judge model the built-in
 > evaluators use to score responses. That's a fine simplification for this lab; in a production
 > evaluation pipeline, judge and system-under-test models are often deliberately different.
 
@@ -590,9 +601,11 @@ against the baseline run in the Foundry portal.
   project (double check against Module 1's deployment name).
 - **Forgetting to re-run `capture_responses.py` after changing the agent:** The evaluation only
   ever scores whatever is already in `discrepancy-eval-dataset.jsonl`. If you create a new agent
-  version (a different instructions tweak, a new tool) and re-run `evaluate.py` without first
-  re-running `capture_responses.py`, you are scoring the *previous* version's answers.
+  version, `capture_responses.py` still targets the version in `EVAL_AGENT_VERSION`. If you
+  recreate the Module 6 version, update that setting and re-run `capture_responses.py` before
+  running `evaluate.py`, or you will score the *previous* version's answers.
+- **`capture_responses.py` stalls or behaves unexpectedly:** Check that `EVAL_AGENT_VERSION` is
+  set in `.env` to the version recorded in Module 6, not a later version with Foundry IQ approval.
 - **`capture_responses.py` hangs after printing nothing:** The same MCP-subprocess cause as
-  Module 6 — confirm `python server.py` still runs cleanly on its own, and that you're running
-  `capture_responses.py` from the same activated-venv terminal where `fastmcp` and `mcp` are
-  importable.
+  Module 6 — confirm `python server.py` still runs cleanly on its own, that `fastmcp` and `mcp`
+  are installed in the client interpreter, and that `env=` passes `LAB_REPO_ROOT` to the server.

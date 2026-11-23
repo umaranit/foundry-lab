@@ -47,7 +47,7 @@ environment is activated.
 
 ### 2. Review the Section 8 escalation-contact table
 
-1. Open [`data/invoice-po-policy.md`](/data/invoice-po-policy.md) and find **Section 8,
+1. Open [`data/invoice-po-policy.md`](../data/invoice-po-policy.md) and find **Section 8,
    "Escalation contact summary."** It's a small Markdown table with three columns: discrepancy
    type (for example `Price mismatch (Tier 2)` or `Missing PO (> $5,000)`), first escalation
    contact, and SLA.
@@ -176,6 +176,7 @@ Replace the imports at the top of `client.py` with:
 import asyncio
 import json
 import os
+import sys
 
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import (
@@ -195,18 +196,19 @@ from functions import lookup_po_by_number
 ```
 
 Keep `po_lookup_tool`, `file_search_tool`, and `code_interpreter_tool` at module level, unchanged
-from Module 5 (including `FILE_SEARCH_VECTOR_STORE_ID` in `.env`). Below them, add the MCP server
-launch parameters:
+from Module 5 (including `FILE_SEARCH_VECTOR_STORE_ID` and `CODE_INTERPRETER_FILE_ID` in `.env`).
+Below them, add the MCP server launch parameters:
 
 ```python
-server_params = StdioServerParameters(command="python", args=["server.py"])
+server_params = StdioServerParameters(
+    command=sys.executable,
+    args=["server.py"],
+    env={"LAB_REPO_ROOT": os.environ["LAB_REPO_ROOT"]},
+)
 ```
 
-> **⚠️ `command="python"` must resolve to your activated virtual environment's Python.**
-> `stdio_client` launches the server as a subprocess using whatever `python` resolves to on your
-> `PATH` at that moment — it does **not** inherit your IDE's selected interpreter automatically.
-> Launch `client.py` from the same activated-venv terminal you used in Step 4, so `fastmcp` is
-> importable in the subprocess too.
+> `sys.executable` uses the client process's Python interpreter. `env=` explicitly passes
+> `LAB_REPO_ROOT` to the server because the full subprocess environment is not inherited by default.
 
 Now replace the `with (...)` block from Module 5 (Steps 6–7 of that module) with an async version.
 Everything from here through the end of the conversation loop now lives inside `async def main()`:
@@ -274,8 +276,11 @@ the `with` block that creates the new agent version — the same pattern as Modu
                         ],
                     ),
                 )
-                print(f"Updated agent '{agent.name}' with the escalation-contact MCP tool.")
+                print(f"Updated agent '{agent.name}' to version {agent.version} with the escalation-contact MCP tool.")
 ```
+
+Record the printed version number in your `.env` file as `EVAL_AGENT_VERSION=<version>`.
+Modules 10 and 11 will target this Module 6 version, not the later version created in Module 7.
 
 **Verify in the Foundry portal:** Once `create_version` succeeds and prints its confirmation,
 open [Foundry](https://ai.azure.com) and navigate to your project > **Agents** >
@@ -366,7 +371,8 @@ if __name__ == "__main__":
    ```
 
 2. Confirm you see `Connected to MCP server with tools: ['get_escalation_contact']`, then
-   `Updated agent '...' with the escalation-contact MCP tool.`, followed by the `YOU:` prompt.
+   `Updated agent '...' to version ... with the escalation-contact MCP tool.`, followed by the
+   `YOU:` prompt. Copy that version number into `.env` as `EVAL_AGENT_VERSION` before Module 7.
 3. Ask an escalation question:
 
    ```text
@@ -417,9 +423,8 @@ How many business days do we have to resolve a duplicate invoice escalation?
 
 - **Client hangs or errors immediately after "Connected to MCP server..." never prints:** The
   subprocess FastMCP server likely failed to start. Confirm `python server.py` runs cleanly on
-  its own (Step 4) and that `command="python"` in `StdioServerParameters` resolves to your
-  activated venv's interpreter — launch `client.py` from the same terminal/venv you used to
-  install `fastmcp` and `mcp`, not a different shell where `python` might point elsewhere.
+  its own (Step 4), that `fastmcp` and `mcp` are installed in the client interpreter, and that
+  `env=` passes `LAB_REPO_ROOT` to the server.
 - **`TypeError: object ... can't be used in 'await' expression` or similar async errors:** This
   usually means a sync call got left inside an `await`, or an `async def` got called without
   `await`/`asyncio.run`. Compare your `client.py` against Step 6–8 closely — the whole client body
@@ -438,4 +443,5 @@ How many business days do we have to resolve a duplicate invoice escalation?
   generically instead of calling the tool.
 - **Module 3/4/5 questions stop working after this module:** Confirm your `tools=[...]` list includes
   `po_lookup_tool`, `file_search_tool`, `code_interpreter_tool`, and `*mcp_function_tools` as shown
-  in Step 7. Restore any missing definitions from Module 5 and re-run `client.py`.
+  in Step 7, and that `CODE_INTERPRETER_FILE_ID` matches the Module 4 file. Restore any missing
+  definitions from Module 5 and re-run `client.py`.

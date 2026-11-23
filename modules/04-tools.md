@@ -49,14 +49,14 @@ a dataset rather than just retrieving and citing text.
 1. Still in the Code Interpreter tool's configuration, select **+ Upload file** (Code
    Interpreter keeps its own attached files, separate from the File Search knowledge source from
    Module 3).
-2. Choose [`discrepancy-trends.csv`](/data/discrepancy-trends.csv) from your local clone of
+2. Choose [`discrepancy-trends.csv`](../data/discrepancy-trends.csv) from your local clone of
    this lab.
 3. Wait for the upload to show a **Ready** (or equivalent "processed") status before continuing.
 4. Save the agent configuration again if the portal requires a separate save after the upload.
 
 > **About this dataset:** `discrepancy-trends.csv` contains a year's worth of historical
 > discrepancy events (date, discrepancy type, vendor, dollar amount, and resolution status) — see
-> [data/README.md](/data/README.md) for details. It's a separate file from the PO records used
+> [data/README.md](../data/README.md) for details. It's a separate file from the PO records used
 > in Module 5; this one is for trend analysis, not looking up an individual PO.
 
 ### 4. Update the system instructions
@@ -78,7 +78,7 @@ Save the agent.
 2. Ask a trend question that requires aggregation across the dataset:
 
    ```text
-   Which discrepancy type increased the most over the last few quarters?
+   Which discrepancy type increased the most from Q1 to Q3 2026?
    ```
 
    Confirm the response identifies **quantity mismatches** as the type trending upward (driven by
@@ -117,7 +117,7 @@ whereas this module's Code Interpreter tool is portal-only, like File Search in 
 - [ ] **Code Interpreter** appears in the agent's Tools list alongside **File Search**.
 - [ ] `discrepancy-trends.csv` is uploaded to Code Interpreter and shows a **Ready**/processed
   status.
-- [ ] Asking "Which discrepancy type increased the most over the last few quarters?" returns
+- [ ] Asking "Which discrepancy type increased the most from Q1 to Q3 2026?" returns
   **quantity mismatches**, backed by a visible code-execution step rather than a guessed answer.
 - [ ] A follow-up analytical question in the same conversation is answered without re-uploading
   the file.
