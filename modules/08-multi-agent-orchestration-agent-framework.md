@@ -87,10 +87,13 @@ this module reads the same `PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT`, and `LAB_REPO
 Confirm your `.env` contains:
 
 ```text
-PROJECT_ENDPOINT=https://<your-project-name>.<region>.ai.azure.com/api/projects/<project-name>
+PROJECT_ENDPOINT=https://<resource-name>.services.ai.azure.com/api/projects/<project-name>
 MODEL_DEPLOYMENT=invoice-assistant-chat
 LAB_REPO_ROOT=C:\path\to\your\local\clone
 ```
+
+Use the complete **Project endpoint** copied from your project's Overview page. Do not construct
+the URL from the project name or substitute the separate Azure OpenAI endpoint.
 
 ### 4. Reuse the PO lookup logic with the Agent Framework's `@tool` decorator
 

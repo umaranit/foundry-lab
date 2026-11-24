@@ -116,7 +116,7 @@ from functions import lookup_po_by_number
 load_dotenv()
 
 project_endpoint = os.environ["PROJECT_ENDPOINT"]
-AGENT_NAME = "Invoice Discrepancy Assistant"
+AGENT_NAME = "invoice-discrepancy-assistant"
 
 DATA_DIR = Path(os.environ["LAB_REPO_ROOT"]) / "data"
 SEED_FILE = DATA_DIR / "discrepancy-eval-seed.jsonl"

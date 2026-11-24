@@ -45,7 +45,7 @@ MODULES TO COVER (one markdown file each, in this order)
 6. MCP Integration (Code) — build a local MCP server using FastMCP with @mcp.tool() decorators
    exposing an escalation-contact lookup tool grounded in the policy's Section 8 table. Connect
    to the local subprocess with the mcp package's stdio_client / ClientSession, discover its
-   tools, and wrap each discovered tool as a FunctionTool with parameters=t.inputSchema on a
+   tools, and wrap each discovered tool as a FunctionTool with parameters=t.input_schema on a
    new Prompt Agent version. Extend Module 5's conversations/responses client with async
    local dispatch through session.call_tool and submit the function-call outputs. There is
    no MCPTool class and no approval loop here; remote MCP approvals belong to Module 7.

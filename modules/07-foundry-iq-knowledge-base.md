@@ -117,7 +117,7 @@ and citations before accepting the extra cost and operational complexity.
 ### 4. Create and connect the Foundry IQ knowledge base
 
 1. Open your project in the [Foundry portal](https://ai.azure.com), then open the
-   **Invoice Discrepancy Assistant** agent and its **Knowledge** page.
+   `invoice-discrepancy-assistant` agent and its **Knowledge** page.
 2. Select **Create a knowledge base**. Use the Azure AI Search resource you created in Step 2
    when selecting the search connection.
 3. Add a source of type **Azure Blob Storage** and configure the knowledge base/source form:
@@ -195,7 +195,7 @@ The Foundry portal does **not** expose this approval setting. Use the **Foundry 
 extension's agent builder**:
 
 1. In VS Code, open Foundry Toolkit, select the same project, and open the existing
-   **Invoice Discrepancy Assistant** in the agent builder. Refresh if the new knowledge tool
+   `invoice-discrepancy-assistant` in the agent builder. Refresh if the new knowledge tool
    does not appear.
 2. In the agent's tool list, find the tool whose generated name starts with
    **`kb-knowledgebase...`**. Confirm it corresponds to your Foundry IQ knowledge base.
@@ -244,7 +244,7 @@ def main():
         ) as project_client,
         project_client.get_openai_client() as openai_client,
     ):
-        agent = project_client.agents.get(agent_name="Invoice Discrepancy Assistant")
+        agent = project_client.agents.get(agent_name="invoice-discrepancy-assistant")
         conversation = openai_client.conversations.create(items=[])
         print("Foundry IQ policy demo ready. Type 'exit' to quit.\n")
 

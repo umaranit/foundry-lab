@@ -2,26 +2,29 @@
 
 **Objective:** Build a local MCP server using FastMCP with an `@mcp.tool()`-decorated
 escalation-contact lookup tool grounded in the invoice/PO policy's Section 8 table, connect to it
-from the Module 5 client using the official `mcp` package's `stdio_client` / `ClientSession`, wrap
-its tool as a `FunctionTool` on a new agent version, and extend the conversation loop to call it.
+from the Module 5 (Custom Function Tools) client using the official `mcp` package's
+`stdio_client` / `ClientSession`, wrap its tool as a `FunctionTool` on a new agent version, and
+extend the conversation loop to call it.
 
 > **Note:** This module adds a **local, stdio-based** MCP server — the kind you write and run
 > yourself as a subprocess. There is no `MCPTool` class and no approval step involved anywhere in
 > this module; those only apply to **remote** MCP servers accessed over HTTP, as outlined in
-> [Module 7](07-foundry-iq-knowledge-base.md). If you've seen the `MCPTool`/approval-request pattern elsewhere (for example in
-> Foundry documentation about hosted remote MCP tools), set it aside for this module — it does
-> not apply here. See Step 6 below for exactly what does apply instead.
+> [Module 7 (Foundry IQ Knowledge Base)](07-foundry-iq-knowledge-base.md). If you've seen the
+> `MCPTool`/approval-request pattern elsewhere (for example in Foundry documentation about hosted
+> remote MCP tools), set it aside for this module — it does not apply here. See Step 6 below for
+> exactly what does apply instead.
 
 **Estimated duration:** 45 minutes
 
-**Prerequisites:** Module 5 complete — you have a working `client.py` and `functions.py` in your
-Module 0 working folder, the **Invoice Discrepancy Assistant** agent has a version with the
-`lookup_po_by_number` `FunctionTool` (plus File Search and Code Interpreter), and your virtual
-environment is activated.
+**Prerequisites:** Module 5 (Custom Function Tools) complete — you have a working `client.py` and
+`functions.py` in your Module 0 (Prerequisites) working folder, the **Invoice Discrepancy
+Assistant** agent has a version with the `lookup_po_by_number` `FunctionTool` (plus File Search
+and Code Interpreter), and your virtual environment is activated.
 
 ## Why this module?
 
-- **Where we are:** Module 5 added a PO lookup implemented directly in our Python client.
+- **Where we are:** Module 5 (Custom Function Tools) added a PO lookup implemented directly in our
+  Python client.
 - **What's missing:** We have not learned how to expose a tool through a separate server and
   a standard protocol. Policy retrieval can already answer contact questions, but it is not a
   dedicated structured contact lookup.
@@ -37,9 +40,9 @@ environment is activated.
 
 ### 1. Install the MCP packages
 
-1. From your activated virtual environment (the same one from Module 5), install `fastmcp` (which
-   you'll use to write the server) and `mcp` (the official Model Context Protocol Python SDK,
-   which you'll use to connect to it as a client):
+1. From the virtual environment you activated for Module 5 (Custom Function Tools), install
+   `fastmcp` (which you'll use to write the server) and `mcp` (the official Model Context Protocol
+   Python SDK, which you'll use to connect to it as a client):
 
    ```powershell
    pip install fastmcp mcp
@@ -63,13 +66,17 @@ Create a file named `server.py` in your working folder:
 
 A FastMCP server that reads directly from policy Section 8 so the tool's data can never drift
 from the authoritative document — mirroring the "read the source file at call time" approach
-functions.py used for po-records.csv in Module 5.
+functions.py used for po-records.csv in Module 5 (Custom Function Tools).
 """
 
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
+
+# Load .env so the server also works when started directly (Step 4) in a fresh terminal.
+load_dotenv()
 
 POLICY_FILE = Path(os.environ["LAB_REPO_ROOT"]) / "data" / "invoice-po-policy.md"
 
@@ -126,10 +133,11 @@ if __name__ == "__main__":
     mcp.run(show_banner=False)
 ```
 
-> **Why `-> dict` instead of `-> str` like Module 5's `lookup_po_by_number`?** FastMCP inspects
-> the return type annotation to build the tool's output schema. A `dict` return is sent back as
-> structured data *and* as a JSON text block the model can read directly — you don't need to call
-> `json.dumps` yourself the way `functions.py` did in Module 5.
+> **Why `-> dict` instead of `-> str` like `lookup_po_by_number` in
+> Module 5 (Custom Function Tools)?** FastMCP inspects the return type annotation to build the
+> tool's output schema. A `dict` return is sent back as structured data *and* as a JSON text block
+> the model can read directly — you don't need to call `json.dumps` yourself the way `functions.py`
+> did in Module 5 (Custom Function Tools).
 
 ### 4. Confirm the server starts cleanly
 
@@ -139,16 +147,27 @@ if __name__ == "__main__":
    python server.py
    ```
 
-2. It won't print anything further — `mcp.run()` puts the process into a loop waiting for a
-   client to talk to it over stdin/stdout (this is the "stdio transport"). That's expected; press
-   `Ctrl+C` to stop it.
+2. You should see a single startup line similar to:
+
+   ```text
+   INFO     Starting MCP server 'EscalationContacts' with transport 'stdio'
+   ```
+
+   Nothing else will print, and you don't need to wait — `mcp.run()` puts the process into a loop
+   waiting for a client to talk to it over stdin/stdout (this is the "stdio transport"). Seeing
+   this line means the server started successfully. Press `Ctrl+C` to stop it.
+
+   > **Note:** When you press `Ctrl+C`, Python may print a long traceback (mentioning `anyio`,
+   > `asyncio`, `KeyboardInterrupt`, or `CancelledError`). That's normal shutdown output from
+   > interrupting the server — not an error. Only a traceback that appears *before* the startup
+   > line (for example, `KeyError: 'LAB_REPO_ROOT'`) indicates a real problem.
 3. You won't normally launch `server.py` directly like this again — in Step 6, your client
    launches it automatically as a subprocess each time it runs.
 
 ### 5. Add the escalation-contact paragraph to the agent's instructions
 
-Open `client.py` (from Module 5) and add one paragraph to the end of `AGENT_INSTRUCTIONS`,
-alongside the existing PO-lookup paragraph from Module 5:
+Open `client.py` from Module 5 (Custom Function Tools) and add one paragraph to the end of
+`AGENT_INSTRUCTIONS`, alongside the existing PO-lookup paragraph:
 
 ```text
 You now also have a get_escalation_contact tool — use it any time an analyst needs to know who to
@@ -161,8 +180,9 @@ answer rather than recalling a contact or SLA from memory.
 
 This is the biggest structural change in this module, so read this before editing code.
 
-> **Why does the client need to become async?** Module 5's `client.py` is a synchronous script —
-> `AIProjectClient`, `openai_client`, and the `input()`-driven loop are all plain, blocking Python.
+> **Why does the client need to become async?** The `client.py` from
+> Module 5 (Custom Function Tools) is a synchronous script — `AIProjectClient`, `openai_client`,
+> and the `input()`-driven loop are all plain, blocking Python.
 > The `mcp` package's `stdio_client` and `ClientSession`, however, are **async context managers**:
 > they manage the MCP server subprocess and the JSON-RPC messages flowing to/from it over asyncio
 > streams, and only work inside `async with` blocks and `await`ed calls. Rather than mixing sync
@@ -180,7 +200,7 @@ import sys
 
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import (
-    CodeInterpreterContainerAuto,
+    AutoCodeInterpreterToolParam,
     CodeInterpreterTool,
     FileSearchTool,
     FunctionTool,
@@ -192,12 +212,14 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai.types.responses.response_input_param import FunctionCallOutput, ResponseInputParam
 
+load_dotenv()
+
 from functions import lookup_po_by_number
 ```
 
 Keep `po_lookup_tool`, `file_search_tool`, and `code_interpreter_tool` at module level, unchanged
-from Module 5 (including `FILE_SEARCH_VECTOR_STORE_ID` and `CODE_INTERPRETER_FILE_ID` in `.env`).
-Below them, add the MCP server launch parameters:
+from Module 5 (Custom Function Tools), including `FILE_SEARCH_VECTOR_STORE_ID` and
+`CODE_INTERPRETER_FILE_ID` in `.env`. Below them, add the MCP server launch parameters:
 
 ```python
 server_params = StdioServerParameters(
@@ -210,8 +232,16 @@ server_params = StdioServerParameters(
 > `sys.executable` uses the client process's Python interpreter. `env=` explicitly passes
 > `LAB_REPO_ROOT` to the server because the full subprocess environment is not inherited by default.
 
-Now replace the `with (...)` block from Module 5 (Steps 6–7 of that module) with an async version.
-Everything from here through the end of the conversation loop now lives inside `async def main()`:
+In `client.py`, select the **entire existing `with` block**, not just its first few lines:
+
+- Start at `with (` immediately before `DefaultAzureCredential()`.
+- Include the agent creation, conversation setup, and entire `while True` loop inside the block.
+- End at `print(f"AGENT: {response.output_text}\n")`, the final line of the conversation loop.
+
+Replace that entire selection with the code below. Keep the configuration, tool definitions
+(`po_lookup_tool`, `file_search_tool`, and `code_interpreter_tool`), and `server_params` above
+the selection. The old `with` block is removed for now; Step 7 adds a new one inside `main()`,
+and Step 8 adds the new conversation loop. Complete Steps 6–8 before running the client.
 
 ```python
 async def main():
@@ -235,7 +265,7 @@ async def main():
                 FunctionTool(
                     name=t.name,
                     description=t.description,
-                    parameters=t.inputSchema,
+                    parameters=t.input_schema,
                     strict=False,
                 )
                 for t in tools
@@ -247,15 +277,22 @@ requiring it to satisfy the stricter FunctionTool schema constraints.
 
 > **No `MCPTool`, no approval step.** `functions_dict` and `mcp_function_tools` are the *entire*
 > MCP integration on the agent-definition side: each MCP tool becomes an ordinary `FunctionTool`
-> the agent already knows how to call, exactly like `po_lookup_tool` from Module 5. There's no
-> separate tool type to add and nothing to approve — approval requests are a **remote** MCP
-> concept (the agent calling a server it doesn't control over HTTP) that doesn't apply when
-> **you** are the one launching the server as a local subprocess.
+> the agent already knows how to call, exactly like `po_lookup_tool` from
+> Module 5 (Custom Function Tools). There's no separate tool type to add and nothing to approve —
+> approval requests are a **remote** MCP concept (the agent calling a server it doesn't control
+> over HTTP) that doesn't apply when **you** are the one launching the server as a local subprocess.
 
-### 7. Create the new agent version
+### 7. Add code to create the new agent version
 
-Still inside `async def main()`, nested one level deeper (inside the `ClientSession` block), add
-the `with` block that creates the new agent version — the same pattern as Module 5, Step 6:
+In `client.py`, **keep the code you added in Step 6**. Go to the end of that code block, after
+the closing `]` of `mcp_function_tools`, and add the following `with` block on a new line.
+Indent its `with (` line to the same level as `tools_response = ...` in Step 6 (12 spaces in
+the code shown). This puts it inside `async with ClientSession(...)` but after the MCP
+connection and tool list have been prepared.
+
+This is a **new** `with` block for the Azure clients; it is not the old block from
+Module 5 (Custom Function Tools) that you removed in Step 6. Do not remove or replace the
+`async def main()`, either `async with` block, or the MCP tool setup above it.
 
 ```python
             with (
@@ -264,7 +301,7 @@ the `with` block that creates the new agent version — the same pattern as Modu
                 project_client.get_openai_client() as openai_client,
             ):
                 agent = project_client.agents.create_version(
-                    agent_name="Invoice Discrepancy Assistant",
+                    agent_name="invoice-discrepancy-assistant",
                     definition=PromptAgentDefinition(
                         model=model_deployment,
                         instructions=AGENT_INSTRUCTIONS,
@@ -279,23 +316,17 @@ the `with` block that creates the new agent version — the same pattern as Modu
                 print(f"Updated agent '{agent.name}' to version {agent.version} with the escalation-contact MCP tool.")
 ```
 
-Record the printed version number in your `.env` file as `EVAL_AGENT_VERSION=<version>`.
-Modules 10 and 11 will target this Module 6 version, not the later version created in Module 7.
-
-**Verify in the Foundry portal:** Once `create_version` succeeds and prints its confirmation,
-open [Foundry](https://ai.azure.com) and navigate to your project > **Agents** >
-**Invoice Discrepancy Assistant** > **Versions** tab. Visually confirm a new version appears
-with the escalation-contact MCP tool (`get_escalation_contact`) listed alongside the Module 5
-tools: `lookup_po_by_number`, **File Search**, and **Code Interpreter**.
-
-`create_version` replaces the entire tool list. The list above retains all three Module 5 tools
-and adds the MCP tools. Re-test Modules 3–5's questions after Step 9 to confirm nothing regressed.
+This code creates the new agent version only when you run `client.py` in Step 9. `create_version`
+replaces the entire tool list, so the list above retains all three tools from
+Module 5 (Custom Function Tools) and adds the MCP tools. Re-test questions from
+Module 3 (Knowledge Base / Grounding), Module 4 (Tools — Built-in), and
+Module 5 (Custom Function Tools) after Step 9 to confirm nothing regressed.
 
 ### 8. Extend the conversation loop to call the MCP tool
 
 Still inside the same `with` block, append the conversation loop — structurally the same as
-Module 5, Step 7, but the function-call handling now dispatches to either the local
-`lookup_po_by_number` or an MCP tool via `functions_dict`:
+Module 5 (Custom Function Tools), Step 7, but the function-call handling now dispatches to
+either the local `lookup_po_by_number` or an MCP tool via `functions_dict`:
 
 ```python
                 conversation = openai_client.conversations.create()
@@ -370,10 +401,24 @@ if __name__ == "__main__":
    python client.py
    ```
 
-2. Confirm you see `Connected to MCP server with tools: ['get_escalation_contact']`, then
-   `Updated agent '...' to version ... with the escalation-contact MCP tool.`, followed by the
-   `YOU:` prompt. Copy that version number into `.env` as `EVAL_AGENT_VERSION` before Module 7.
-3. Ask an escalation question:
+2. Confirm you see `Connected to MCP server with tools: ['get_escalation_contact']`, then a
+   message like `Updated agent 'invoice-discrepancy-assistant' to version 6 with the
+   escalation-contact MCP tool.`, followed by the `YOU:` prompt.
+3. Before continuing to Module 7 (Foundry IQ Knowledge Base), open the `.env` file in the same
+   working folder as `client.py`. Add this line, or update it if it already exists, replacing `6`
+   with the version number printed in your terminal (do not include angle brackets):
+
+   ```text
+   EVAL_AGENT_VERSION=6
+   ```
+
+   Module 10 (Evaluation) and Module 11 (Monitoring & Tracing) use this value to target the
+   Module 6 (MCP Integration) agent version.
+4. **Verify in the Foundry portal:** Open [Foundry](https://ai.azure.com) and navigate to your
+   project > **Agents** > `invoice-discrepancy-assistant` > **Versions**. Confirm that the
+   version number printed in the terminal appears with `get_escalation_contact` alongside
+   `lookup_po_by_number`, **File Search**, and **Code Interpreter**.
+5. Ask an escalation question:
 
    ```text
    A price mismatch just got classified as Tier 2. Who should I escalate it to and what's the SLA?
@@ -381,7 +426,7 @@ if __name__ == "__main__":
 
    Confirm the agent calls `get_escalation_contact` and answers **AP Supervisor** within
    **2 business days**, matching policy Section 8.
-4. Ask about a case with no internal escalation:
+6. Ask about a case with no internal escalation:
 
    ```text
    We have a missing PO on an $8,000 invoice. Who handles the escalation?
@@ -389,22 +434,24 @@ if __name__ == "__main__":
 
    Confirm the agent reports the invoice is rejected back to the vendor with no internal
    escalation (per the "Missing PO (> $5,000)" row), rather than inventing a contact.
-5. Re-test a Module 5 question (for example, looking up `PO-10234`) to confirm `po_lookup_tool`
-   still works on this new agent version.
-6. Type `exit` to end the session.
+7. Re-test a Module 5 (Custom Function Tools) question (for example, looking up `PO-10234`) to
+   confirm `po_lookup_tool` still works on this new agent version.
+8. Type `exit` to end the session.
 
 ## ✅ Checkpoint / Validate
 
 - [ ] `python client.py` prints the connected-tools line, then the agent-version confirmation,
   without import or authentication errors.
 - [ ] The Foundry portal's **Versions** tab shows a new **Invoice Discrepancy Assistant** version
-  with `get_escalation_contact` listed alongside all three Module 5 tools.
+  with `get_escalation_contact` listed alongside all three tools from
+  Module 5 (Custom Function Tools).
 - [ ] Asking an escalation-contact question returns the correct contact and SLA from policy
   Section 8, not a guessed answer.
 - [ ] Asking about the "no internal escalation" case (missing PO over $5,000) is handled
   correctly, not as a tool error.
-- [ ] A Module 5 PO-lookup question and a Module 3/4 policy or trend question still work against
-  this new agent version.
+- [ ] A Module 5 (Custom Function Tools) PO-lookup question and a policy or trend question from
+  Module 3 (Knowledge Base / Grounding) or Module 4 (Tools — Built-in) still work against this new
+  agent version.
 
 ## 🚀 Try it yourself
 
@@ -421,10 +468,17 @@ How many business days do we have to resolve a duplicate invoice escalation?
 
 ## ⚠️ Troubleshooting
 
+- **`KeyError: 'LAB_REPO_ROOT'` when running `python server.py`:** The server couldn't find
+  `LAB_REPO_ROOT`. Confirm `server.py` includes `load_dotenv()` (Step 3), that you run it from the
+  working folder containing the `.env` file from Module 5 (Custom Function Tools), and that `.env`
+  has a `LAB_REPO_ROOT=...` line.
 - **Client hangs or errors immediately after "Connected to MCP server..." never prints:** The
   subprocess FastMCP server likely failed to start. Confirm `python server.py` runs cleanly on
   its own (Step 4), that `fastmcp` and `mcp` are installed in the client interpreter, and that
   `env=` passes `LAB_REPO_ROOT` to the server.
+- **`AttributeError: 'Tool' object has no attribute 'inputSchema'`:** In `client.py`, change
+  `parameters=t.inputSchema` to `parameters=t.input_schema` in the `mcp_function_tools`
+  definition from Step 6, then rerun the client.
 - **`TypeError: object ... can't be used in 'await' expression` or similar async errors:** This
   usually means a sync call got left inside an `await`, or an `async def` got called without
   `await`/`asyncio.run`. Compare your `client.py` against Step 6–8 closely — the whole client body
@@ -433,15 +487,17 @@ How many business days do we have to resolve a duplicate invoice escalation?
 - **`RuntimeError: This event loop is already running` or nested `asyncio.run` errors:** Make sure
   you only call `asyncio.run(main())` once, at module level under `if __name__ == "__main__":`,
   and that you haven't also wrapped the script in another async runner.
-- **Escalation-contact answers look wrong or stale:** Confirm `LAB_REPO_ROOT` in `.env` (set in
-  Module 5) still points at the root of your local clone of this repository (the folder directly
-  containing `data/po-records.csv`), so
-  `server.py` reads the same `invoice-po-policy.md` you reviewed in Step 2.
+- **Escalation-contact answers look wrong or stale:** Confirm `LAB_REPO_ROOT` in `.env`, set in
+  Module 5 (Custom Function Tools), still points at the root of your local clone of this repository
+  (the folder directly containing `data/po-records.csv`), so `server.py` reads the same
+  `invoice-po-policy.md` you reviewed in Step 2.
 - **Agent answers from memory instead of calling `get_escalation_contact`:** Confirm Step 5's
   instructions paragraph was actually added, and that the discrepancy-type phrase in your question
   reasonably matches a Section 8 row — an unrecognized phrase may lead the model to answer
   generically instead of calling the tool.
-- **Module 3/4/5 questions stop working after this module:** Confirm your `tools=[...]` list includes
-  `po_lookup_tool`, `file_search_tool`, `code_interpreter_tool`, and `*mcp_function_tools` as shown
-  in Step 7, and that `CODE_INTERPRETER_FILE_ID` matches the Module 4 file. Restore any missing
-  definitions from Module 5 and re-run `client.py`.
+- **Questions from Module 3 (Knowledge Base / Grounding), Module 4 (Tools — Built-in), or
+  Module 5 (Custom Function Tools) stop working after this module:** Confirm your `tools=[...]`
+  list includes `po_lookup_tool`, `file_search_tool`, `code_interpreter_tool`, and
+  `*mcp_function_tools` as shown in Step 7, and that `CODE_INTERPRETER_FILE_ID` matches the
+  Module 4 (Tools — Built-in) file. Restore any missing definitions from
+  Module 5 (Custom Function Tools) and re-run `client.py`.

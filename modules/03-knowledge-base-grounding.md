@@ -45,24 +45,20 @@ policy-specific questions (for example, exact tolerance thresholds) or look up P
 > uploaded files — Markdown, with its headings and tables, chunks cleanly and keeps the tolerance
 > tables intact, which makes citations easier to trace back to a specific section.
 
-## 2. Upload the policy document to the project
+## 2. Open the agent's Attach files dialog
 
-1. In your Foundry project, select **Files** (or **Data** / **Knowledge**, depending on your
-   portal version) from the left-hand navigation.
-2. Select **+ Upload file** and choose `invoice-po-policy.md` from your local clone of this lab.
-3. Wait for the upload to complete and confirm the file shows a **Ready** (or equivalent
-   "processed") status before continuing — if it's still indexing, the next step may not find
-   any content yet.
+1. Under **Agents**, open the agent you created in Module 2 and select **Playground**.
+   If you're already in its Playground, stay there.
+2. In the agent's **Tools** section, select **Upload files** to open the **Attach files**
+   dialog. Use this button, not the paperclip in the chat.
 
-## 3. Attach a File Search knowledge source to the agent
+## 3. Attach the policy using a new vector index
 
-1. Return to **Agents** and open the **Invoice Discrepancy Assistant** you created in Module 2.
-2. In the agent's configuration, find the **Knowledge** (or **Grounding**) section and select
-   **+ Add** > **File search**. Choose the uploaded-file/vector-store retrieval option for this
-   module; the separate Foundry IQ knowledge-base workflow is covered in Module 7.
-3. Create a new knowledge source / vector store and attach the `invoice-po-policy.md` file you
-   just uploaded to it.
-4. Save the agent configuration.
+1. Under **Index option**, leave **Create a new index** selected. Keep the generated
+   **Vector index name** and note it so you can recognize it later.
+2. Select **browse for files** and choose [invoice-po-policy.md](../data/invoice-po-policy.md)
+   from the `data` folder in your local workshop clone.
+3. Select **Attach**.
 
 > **Indexing behavior:** uploading a file does not make it immediately searchable. Foundry chunks
 > the document, generates embeddings, and builds a vector index before File Search can retrieve

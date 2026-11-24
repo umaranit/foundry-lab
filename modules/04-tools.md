@@ -33,7 +33,8 @@ a dataset rather than just retrieving and citing text.
 
 ### 2. Add the Code Interpreter tool
 
-1. In your Foundry project, return to **Agents** and open the **Invoice Discrepancy Assistant**.
+1. In your Foundry project, return to **Agents** and open
+   `invoice-discrepancy-assistant`.
 2. In the agent's configuration, find the **Tools** section and select **+ Add** > **Code
    interpreter**.
 3. Confirm Code Interpreter now appears alongside File Search in the agent's tools list.

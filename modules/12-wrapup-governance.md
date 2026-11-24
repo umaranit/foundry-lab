@@ -132,7 +132,7 @@ step that guarantees nothing is left behind.
    endpoints**, select the `invoice-assistant-chat` and embedding model deployments, and select
    **Delete**. This stops their ongoing usage billing.
 2. **Delete the agent (Module 2).** In the Foundry portal, go to **Agents**, select the
-   **Invoice Discrepancy Assistant**, and select **Delete**. This removes the agent and its
+   `invoice-discrepancy-assistant`, and select **Delete**. This removes the agent and its
    versions (including the tool configuration added in Modules 3–7).
 3. **Delete the resource group (covers everything else in one step).** Rather than hunting down
    the Application Insights resource, the Azure AI Search service and Storage account from Module

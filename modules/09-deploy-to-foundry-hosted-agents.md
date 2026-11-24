@@ -121,7 +121,7 @@ and must be cleaned up even if the request or provisioning fails.
 
    Reuse Module 8's `PROJECT_ENDPOINT` and `MODEL_DEPLOYMENT` **values**, under the names above.
    Copy the actual endpoint; do not construct one from a resource name. Choose a unique hosted
-   agent name that belongs only to you. **Do not use the Invoice Discrepancy Assistant's name
+   agent name that belongs only to you. **Do not use the name `invoice-discrepancy-assistant`
    or an agent with other users' traffic.** Routing in this exercise affects the entire named
    agent endpoint, not just your session.
 
@@ -609,7 +609,7 @@ quantity before changing prompts or trying another deployment.
    [Foundry portal](https://ai.azure.com). Open the project matching `FOUNDRY_PROJECT_ENDPOINT`
    in `.env`, then navigate to **Agents** > **<agent name>** > **Versions** tab.
    Use the dedicated hosted agent name from `FOUNDRY_HOSTED_AGENT_NAME` in `.env`, not the
-   earlier **Invoice Discrepancy Assistant** Prompt Agent.
+   earlier `invoice-discrepancy-assistant` Prompt Agent.
 2. Refresh the versions list and find the **new version number recorded in Step 7**. Confirm
    its status is **Active**, then open that version's details and visually verify the
    requested configuration:
@@ -642,7 +642,7 @@ quantity before changing prompts or trying another deployment.
    Refresh and confirm the temporary version recorded in Step 7 is gone. If a prior endpoint
    configuration existed, open the same agent's endpoint configuration and confirm the prior
    version selection/protocol configuration is restored.
-2. Verify that the existing **Invoice Discrepancy Assistant** Prompt Agent and Module 8's
+2. Verify that the existing `invoice-discrepancy-assistant` Prompt Agent and Module 8's
    local script are unchanged.
 3. If provisioning fails or times out after creation returns, or invocation fails, the same
    `finally` block attempts cleanup. A cleanup exception is a **failed lab run**, not success:

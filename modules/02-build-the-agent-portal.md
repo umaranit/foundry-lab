@@ -8,7 +8,8 @@ This is a Prompt Agent (AgentKind.PROMPT) - server-managed by Foundry, not to be
 **Estimated duration:** 25 minutes
 
 **Prerequisites:** Module 1 complete — a Foundry project exists with the
-`invoice-assistant-chat` model deployment showing status **Succeeded**.
+`invoice-assistant-chat` model deployment (or your chosen chat deployment) showing status
+**Succeeded**.
 
 ## Why this module?
 
@@ -28,16 +29,17 @@ This is a Prompt Agent (AgentKind.PROMPT) - server-managed by Foundry, not to be
 ### 1. Navigate to Agents
 
 1. In your Foundry project, select **Agents** from the left-hand navigation.
-2. Select **+ New agent**.
+2. Select **New agent** > **Build an agent**. This opens the prompt-agent builder. Choose
+   **Build an agent**, not **Code an agent**.
 
 ### 2. Create the Prompt Agent
 
-1. Choose the **Prompt agent** type (a service-managed agent configured declaratively in the
-   portal — as opposed to the code-first agents you'll build in Module 8).
-2. Configure the basics:
-   - **Name:** `Invoice Discrepancy Assistant`
-   - **Model deployment:** `invoice-assistant-chat` (from Module 1)
-3. Select **Create**.
+1. Configure the agent:
+   - **Name:** `invoice-discrepancy-assistant` (Foundry agent names must start and end with a
+     letter or number; use hyphens instead of spaces.)
+   - **Model:** select `invoice-assistant-chat` (or your chosen deployment from Module 1).
+2. Select **Create** to open the agent in the playground. This is a service-managed Prompt Agent,
+   not the code-first agent you'll build in Module 8.
 
 ### 3. Write the system instructions
 
@@ -108,12 +110,12 @@ different, code-defined system that happens to address the same scenario.
 
 1. Confirm your instructions are saved (most portal versions autosave, but explicitly select
    **Save** if available).
-2. Note the agent's name/ID — you'll reference it again in Module 3 (adding grounding), Module 4
-   (adding tools), and Module 5 (calling it from code).
+2. Note the agent's name, `invoice-discrepancy-assistant`, and ID — you'll reference it again in
+   Module 3 (adding grounding), Module 4 (adding tools), and Module 5 (calling it from code).
 
 ## ✅ Checkpoint / Validate
 
-- [ ] The **Invoice Discrepancy Assistant** agent exists and uses the `invoice-assistant-chat`
+- [ ] The `invoice-discrepancy-assistant` agent exists and uses the `invoice-assistant-chat`
   deployment.
 - [ ] The agent responds sensibly and on-topic to a general discrepancy question in the
   playground.

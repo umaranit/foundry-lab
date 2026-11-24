@@ -205,7 +205,7 @@ Reserve 5–10 extra minutes for subprocess/venv or async mistakes, not Azure pr
 
 ### Talking points
 - FastMCP exposes the tool; the `mcp` package's `stdio_client` and `ClientSession` discover and
-  call it. Each discovered tool becomes a `FunctionTool` with `parameters=t.inputSchema`.
+  call it. Each discovered tool becomes a `FunctionTool` with `parameters=t.input_schema`.
 - This is another Prompt Agent version using Module 5's conversations/responses pattern.
   The local client dispatches to the subprocess and returns function outputs; there is no
   `MCPTool` class or approval loop in this integration.
