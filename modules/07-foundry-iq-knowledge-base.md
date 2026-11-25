@@ -10,8 +10,13 @@ remote MCP approval requests in a separate Python demo.
 **Prerequisites:** [Module 3](03-knowledge-base-grounding.md),
 [Module 5](05-programmatic-dev-vscode-hosted-agent.md), and
 [Module 6](06-mcp-integration.md) complete; permissions to create Azure AI Search and Azure
-Storage resources and configure their connections; an available embedding model and chat
-completions model; VS Code with the Foundry Toolkit extension. Keep your existing Python virtual
+Storage resources and configure their connections; the Module 1 chat deployment (or another
+supported chat completions deployment); and either a facilitator-provided embedding deployment
+or permission and quota to deploy a supported embedding model in the project region (see Module 0).
+The Search service needs a system-assigned managed identity and permissions to access the model
+resources; assigning roles requires appropriate Azure permissions. Check your organization's
+policies for Blob authentication and the separate Foundry-to-Search connection before starting.
+You'll also need VS Code with the Foundry Toolkit extension. Keep your existing Python virtual
 environment, `.env`, File Search vector store, and Module 6 client.
 
 ## Why this module?
@@ -40,7 +45,9 @@ environment, `.env`, File Search vector store, and Module 6 client.
 (`mslearn-ai-agents/Instructions/Exercises/04-integrate-agent-with-foundry-iq.html`).
 The reference uses product documents; here you reuse the fictional invoice/PO policy from
 Module 3. Follow the portal and approval flow below rather than introducing a different
-retrieval API. Foundry IQ knowledge bases reached general availability in June 2026. Specific
+retrieval API. The portal sequence (Search service, knowledge-base form with Blob source, then
+agent connection) follows [What is Foundry IQ?](https://learn.microsoft.com/azure/foundry/agents/concepts/what-is-foundry-iq?tabs=portal)
+and [Connect agents to Foundry IQ knowledge bases](https://learn.microsoft.com/azure/foundry/agents/how-to/foundry-iq-connect). Foundry IQ knowledge bases reached general availability in June 2026. Specific
 tiers or features (for example, Serverless), regional availability, and portal labels may still
 change.
 
@@ -57,7 +64,7 @@ attached there, and **Foundry IQ** means the Azure AI Search-backed knowledge ba
 | Knowledge scope | A single vector store containing the uploaded policy file in this lab | Multi-source-capable knowledge base; this lab starts with one Blob Storage container |
 | Retrieval | Simpler file retrieval with citations | Agentic retrieval that can plan searches across connected knowledge sources |
 | Resources | No separately provisioned Azure AI Search resource in this lab | Azure AI Search, Blob Storage, an embedding model, and a chat completions model |
-| Approval | No MCP approval prompt | Remote MCP-style knowledge tool; requires client approval handling after you enable approval in Step 6 |
+| Approval | No MCP approval prompt | Remote MCP-style knowledge tool; requires client approval handling after you enable approval in Step 7 |
 | Complexity and cost | Simpler and generally cheaper for this small, single-policy scenario; not necessarily free | More setup and potential Search, Storage, embedding, and retrieval-model charges |
 | When to choose | A small, stable set of files and straightforward grounding | Knowledge spanning multiple sources, agentic retrieval, and an explicit retrieval-approval workflow |
 
@@ -73,85 +80,248 @@ and citations before accepting the extra cost and operational complexity.
    ```
 
 3. Record the answer, visible citation/source detail, and the File Search tool-call evidence.
-   This is your Module 3 baseline; keep it for Step 9. If Foundry IQ is already attached from a
+   This is your Module 3 baseline; keep it for Step 10. If Foundry IQ is already attached from a
    previous attempt, temporarily disconnect that knowledge tool for this baseline and reconnect
    it afterward. Do not delete the knowledge base or the File Search vector store.
 
-### 2. Create Azure AI Search and enable key access
+### 2. Create or connect Azure AI Search from Foundry's Knowledge experience
 
-1. In the [Azure portal](https://portal.azure.com), select **Create a resource**, search for
-   **Azure AI Search**, and create a search service.
-2. Select your workshop subscription and the **same resource group and region as your Foundry
-   project**. Give the service a unique name, such as `invoice-policy-search-<unique-suffix>`.
-3. Use the default/**Free** tier where available for the exercise, or **Basic** if Free is not
-   available. Review the selected tier and estimated charges before creating the resource;
-   Basic is billable. If your region/tier does not support the required capability, stop and
-   resolve availability with the facilitator rather than silently selecting a larger paid tier.
-4. Once deployment completes, open the Search resource and go to **Security + networking >
-   Keys**.
-5. Set **API Access control** to **Both** and save. This allows the key-authentication path used
-   by the reference exercise alongside role-based access.
-6. Keep this page available: you will use the Search resource's key when configuring the
-   Foundry connection in Step 4.
+Foundry IQ knowledge bases run on an Azure AI Search service. Create or connect that service
+from the project's **Knowledge** experience so Foundry registers the connection for you:
 
-> **Lab authentication scope:** API keys are used here to mirror the verified reference, not as
-> a blanket production recommendation. Do not paste keys into Python code, `.env`, screenshots,
-> chat, or source control. Enter the key only into the connection's credential field. Follow
-> your organization's identity, key-management, and network policies for a real deployment; do
-> not bypass a policy that prohibits key authentication.
+**Order for Steps 2–5:** connect Search → enable its managed identity and check its approved
+authentication settings → prepare the policy and embedding model → create the Blob source and
+knowledge base → connect the knowledge base to the agent. A Search connection alone is not yet
+a knowledge base.
 
-### 3. Create Blob Storage and upload the existing policy
+1. In the [Foundry portal](https://ai.azure.com) (with the **New Foundry** toggle on), open your
+   existing project and select **Build** from the top menu, then the **Knowledge** tab.
+2. If the project already has a suitable workshop Search service connected, select it and
+   continue with item 6. Do not create a duplicate service.
+3. Otherwise, choose to create a new Azure AI Search service. Give it a globally unique name,
+   select your workshop subscription, and use the **same resource group and region as your
+   Foundry project**. The service must be in a region and tier that support agentic retrieval.
+4. Choose **Basic** or an approved higher tier: this lab uses a Search managed identity for
+   model access, and **Free** does not support managed identities. Basic is billable; review
+   the estimated charges before creating the resource. If creation fails, use the link in the form
+   to try the [Azure portal](https://portal.azure.com), then return to **Build > Knowledge** and
+   connect the service you created. If the region or tier does not support agentic retrieval,
+   stop and resolve availability with the facilitator rather than silently selecting a larger
+   paid tier.
+5. Wait for the Search service to finish creating. The **Knowledge (Foundry IQ)** page should
+   now show your Search connection in the **Connection** drop-down (with a **Manage** link) and
+   an enabled **Create a knowledge base** button. Don't select that button yet: finish Step 3
+   first. You will use this same connection in Steps 4 and 5.
+6. In a separate browser tab, open the [Azure portal](https://portal.azure.com). Search for
+   **Search services**, open the Search service you selected above, and select **Settings >
+   Identity**. On the **System assigned** tab, turn **Status** on and select **Save**.
+   If it is already on, leave it enabled. A Free service cannot be upgraded in place; work with
+   your facilitator to use a Basic or higher service instead.
+7. On the Search service, select **Security + networking > Keys** and check **API Access
+   control** against your organization's approved connection method:
 
-1. In the Azure portal, create a **Storage account** in the workshop resource group and region.
-   Use a globally unique name with lowercase letters and numbers, such as
-   `invoicepolicyst<uniquesuffix>`. Standard storage with locally redundant storage is sufficient
-   for this lab; review its estimated cost before creating it.
-2. Open the storage account, select **Data storage > Containers**, and create a private
+   - For **Microsoft Entra ID**, Search must allow **Role-based access control** or **Both**.
+     The user and workload identities also need the appropriate Search roles.
+   - For **API Key**, Search must allow **API Key** or **Both**. Use this method only if your
+     organization permits it.
+
+   If the appropriate option is already enabled, leave it unchanged. Ask the service owner before
+   changing a shared service. Do not enable API keys just to use Microsoft Entra ID.
+8. Return to the Foundry **Knowledge** page and refresh it. Confirm the same connection is
+   selected. Continue to Step 3 before selecting **Create a knowledge base**.
+
+> **Same flow from the agent:** If you start from the agent's **Knowledge** page instead and
+> select **Add > Connect to Foundry IQ**, a project without a Search connection shows
+> **No connections available**. Select **Connect to an AI Search resource > Create new resource**
+> there; it creates the same kind of project connection. Return to item 6 above to configure
+> the Search identity and approved access method before continuing to Step 3.
+
+> **Lab authentication scope:** The Foundry-to-Search connection in Step 5 can use the
+> organization's approved identity or key-based configuration; the reference exercise uses a
+> **Search** key. This is separate from the Blob authentication choice in Step 4. Do not paste
+> keys into Python code, `.env`, screenshots, chat, or source control, or bypass a policy that
+> prohibits them. Regardless of the Blob authentication choice, this lab's Search identity also
+> needs access to the model resources.
+
+### 3. Prepare the Contoso policy and embedding model
+
+A **knowledge source** connects Foundry IQ to content. Here it points at a Blob Storage container
+holding the same Contoso invoice/PO policy that Module 3's File Search uses. The source needs
+two things to exist first: the uploaded policy and an embedding deployment.
+
+> **Not creating the source yet:** In this Foundry workflow, you add the knowledge source
+> *inside* the knowledge-base creation form in Step 4. First complete both preparations below.
+
+#### Upload the policy to Blob Storage
+
+1. In the [Azure portal](https://portal.azure.com), search for **Storage accounts**, select
+   **Storage accounts**, and select **Create**. Use the workshop subscription, resource group,
+   and region. Enter a globally unique name using lowercase letters and numbers, such as
+   `invoicepolicyst<uniquesuffix>`. Choose **Standard** performance and **Locally-redundant
+   storage (LRS)**. Review the settings and estimated cost, then create the account and wait
+   for deployment to complete.
+2. Open the new storage account, select **Data storage > Containers**, and create a private
    container named **`invoice-po-policy`**. Do not enable anonymous/public access.
 3. Open that container, select **Upload**, and upload the exact
    [invoice-po-policy.md](../data/invoice-po-policy.md) used in Module 3.
-4. Confirm the blob appears in the container. Do **not** rewrite the policy, substitute the
-   reference exercise's product documents, or remove Module 3's File Search upload. Both
-   retrieval paths must use the same policy so the later comparison is meaningful.
+4. Confirm the blob appears in the container. Do **not** rewrite the policy, add other documents,
+   substitute the reference exercise's product documents, or remove Module 3's File Search
+   upload. Both retrieval paths must use the same single policy so the later comparison is fair.
 
-### 4. Create and connect the Foundry IQ knowledge base
+#### Deploy an embedding model
 
-1. Open your project in the [Foundry portal](https://ai.azure.com), then open the
-   `invoice-discrepancy-assistant` agent and its **Knowledge** page.
-2. Select **Create a knowledge base**. Use the Azure AI Search resource you created in Step 2
-   when selecting the search connection.
-3. Add a source of type **Azure Blob Storage** and configure the knowledge base/source form:
+Foundry IQ uses an embedding model to turn the policy and search queries into vectors, so its
+index can find relevant content by meaning. This is separate from the chat model used for
+agentic retrieval.
+
+If your facilitator provided a supported embedding deployment, confirm it is available to this
+project and shows **Succeeded**, record its name, and skip the deployment steps below.
+
+1. In the [Foundry portal](https://ai.azure.com), open your existing project. Select **Catalog**,
+   then **Models**, and find `text-embedding-3-small` or another supported, current embedding
+   model available in your project region.
+2. Select the model and **Deploy**. Set the **Deployment name** to
+   `invoice-assistant-embedding` and choose **Global Standard** if it is available and permitted
+   for the selected model and region. Otherwise, choose an available deployment type approved
+   for your workshop's processing boundaries.
+3. Select **Deploy** and wait for the deployment to show **Succeeded** under **Models**.
+   Record the actual deployment name. If quota or availability blocks deployment, check
+   **Management center > Quota** and ask your facilitator for a supported option.
+
+**Before continuing:** The policy is visible in the private Blob container, and you know the
+name of a successful embedding deployment. Return to the Foundry **Knowledge (Foundry IQ)**
+page with the Search connection from Step 2 selected.
+
+### 4. Create the knowledge source and Foundry IQ knowledge base
+
+1. On the Foundry **Knowledge (Foundry IQ)** page, select **Create a knowledge base**. If asked
+   for a Search service or connection, select the existing one from Step 2; do not create another.
+   The **Create a new knowledge base** page opens. Fill it in from top to bottom as follows.
+2. Under **Basic configuration**, replace the generated name (for example, `knowledgebase698`)
+   and add a description:
 
    | Field | Value for this lab |
    |---|---|
-   | Name | `invoice-po-policy-kb` for the knowledge base; `invoice-po-policy-source` if a separate source name is requested |
+   | Name | `invoice-po-policy-kb` |
    | Description | `Contoso Finance invoice and purchase order discrepancy policy, including tolerance thresholds, duplicate detection, and missing-PO rules.` |
-   | Storage account | The account created in Step 3 |
-   | Blob container | `invoice-po-policy` |
-   | Authentication type | **API Key** |
-   | Content extraction mode | **minimal** |
-   | Embedding model | An available embedding model deployment in your project |
-   | Chat completions model | An available, supported chat completions model deployment in your project |
 
-   Select actual deployments, not just model catalog names. The embedding model supports
-   indexing/retrieval; the chat completions model supports agentic retrieval. These are separate
-   roles even if you reuse the agent's chat deployment for the latter.
+   Use this exact name, because Step 5 asks you to select `invoice-po-policy-kb`.
+3. Expand **Improve retrieval** and select a chat completions model deployment:
+   `invoice-assistant-chat` from Module 1 if listed, or another supported chat deployment.
+   Set **Retrieval reasoning effort** to **Minimal** for this lab, and leave the other
+   settings at their defaults. Minimal ordinarily bypasses model-based query planning; higher
+   effort levels can use the chat model to plan queries. This model does not replace the
+   embedding model.
+4. Under **Knowledge sources (Foundry IQ)**, select **Add sources > Azure Blob Storage**. Do
+   **not** select **Upload files**: that creates a different source type than the Blob
+   container prepared in Step 3. In the source form, enter:
 
-4. Save and wait until the knowledge base/source status is **active**. Saving configuration is
-   not proof that the policy is indexed and ready.
-5. Return to the agent's **Knowledge** page and open **Connection > Manage**.
-6. Under **Connected resources**, find the Search service from Step 2. Set **Authentication** to
-   **Key authentication**, paste that **Search resource's key** from its **Keys** page, and save.
-   This is a separate setting from the Blob source's **API Key** authentication; do not paste a
-   Storage account key into the Search connection.
-7. Return to the agent and confirm the knowledge base is attached. If the creation flow has
-   not attached it, use **Add > Connect to Foundry IQ** and select the search connection and
-   `invoice-po-policy-kb`. Keep **File Search** attached as well, and save the agent.
+   | Field | Value for this lab |
+   |---|---|
+   | Name | `invoice-po-policy-source` |
+   | Description | `Contoso invoice and purchase order discrepancy policy` |
+   | Storage account name | The account created in Step 3 |
+   | Container name | `invoice-po-policy` |
+   | Authentication type | **System assigned identity** or **API Key**, according to your organization's setup (see below) |
+   | Content extraction mode | **Minimal** |
+   | Embedding model | `invoice-assistant-embedding`, or the supported embedding deployment you recorded |
+   | Chat completions model | `invoice-assistant-chat` from Module 1 if supported, or another supported chat deployment |
 
-### 5. Test both knowledge tools in the playground
+   Select actual deployments, not just model catalog names. The embedding model on the source
+   handles indexing and query vectors. The source form can also request a chat model, which is
+   a separate setting from the **Improve retrieval** model.
+5. Choose the **Authentication type** for Search to read the Blob container:
 
-1. Keep the existing instructions and tools from Modules 5–6. Update only the grounding
-   paragraph that currently says the policy is available through file search:
+   - **System assigned identity:** Choose this when keyless access is required or preferred.
+     The Search identity enabled in Step 2 needs **Storage Blob Data Reader** on the storage
+     account. If the form displays **Grant access**, select it and confirm the green access
+     message. If you cannot grant access, ask an administrator to assign that role to the
+     Search service's system-assigned identity under the storage account's **Access control
+     (IAM)**.
+   - **API Key:** Choose this only if Storage account key access is enabled and permitted by
+     your organization. If the option is disabled, use **System assigned identity** or ask
+     your administrator; do not enable key access against policy. Follow the portal prompts
+     without copying a Storage key into chat, screenshots, code, or files.
+
+   This choice governs **Search-to-Storage** access, not the separate Search connection in
+   Step 5.
+6. Check the model-access message in the source form regardless of which Blob authentication
+   option you selected. If prompted, select **Grant access** and confirm the green role-assigned
+   message for the Search service's managed identity on the model's Foundry resource. If you
+   cannot assign roles, ask an administrator for help. Microsoft documents **Cognitive Services
+   User** on the Foundry resource and **Cognitive Services OpenAI User** on the resource hosting
+   Azure OpenAI embedding or chat deployments. Apply the roles required by your actual model
+   resources and configuration. See the [Blob knowledge source prerequisites](https://learn.microsoft.com/azure/search/agentic-knowledge-source-how-to-blob#prerequisites).
+   Role assignments may take a few minutes to apply; if the form offers **Retry**, select it
+   after propagation. Green messages confirm role assignment, not network connectivity: ensure
+   the Search service can reach Storage and model resources under your organization's network
+   rules.
+7. Select **Create** in the source form. Back on the knowledge-base page, confirm that
+   `invoice-po-policy-source` appears under **Knowledge sources**. Add only this one source so
+   the comparison with File Search is fair.
+8. Leave **Encryption settings** collapsed. The default Microsoft-managed keys are fine for
+   this lab, unless your organization requires customer-managed keys.
+9. Select **Save knowledge base**, then refresh the page until the knowledge source status
+   shows **active**. If it does not become active, inspect the source/indexing errors before
+   continuing. An active status alone does not confirm the policy was indexed successfully;
+   verify actual retrieval in Step 6.
+
+### 5. Connect the knowledge base to the agent
+
+1. Return to the project's **Knowledge (Foundry IQ)** page and select **Manage** beside the
+   **Connection** drop-down. This can open **Manage > Project details > Connections** (also
+   labeled **Connected resources** in some portal versions). Find the row with category
+   **CognitiveSearch** and confirm its target is the Search service from Step 2.
+2. Check its authentication method:
+
+   - **Microsoft Entra ID:** Keep the existing connection if this is your approved method.
+     **No key available** is expected for a connection without a stored key; do not switch to
+     key authentication just because that message appears. Search must accept role-based access
+     as checked in Step 2.
+   - **API Key:** If this is your approved method, use the existing key connection. If a
+     credential must be configured, follow the portal's authentication prompts and enter the
+     Search service key directly in the connection dialog. The reference exercise uses a Search
+     admin key. Do not use a Storage key or share any key in chat or screenshots.
+
+   The connection row does not by itself prove the agent can retrieve from the knowledge base:
+   its MCP tool may use a separate connection or identity. If connection or retrieval fails,
+   check the actual identity and permissions as described in **Troubleshooting**.
+3. In Foundry, go to **Build > Agents** and open `invoice-discrepancy-assistant`. On the agent
+   page, select **Playground** if it is not already selected, then find the **Knowledge**
+   section in the agent configuration.
+4. Select **Add > Connect to Foundry IQ**. In the dialog, choose the Search connection from
+   Step 2 and the `invoice-po-policy-kb` knowledge base, then select **Connect**. If the
+   knowledge base is not listed, confirm its source shows **active** in Step 4 and refresh.
+5. Keep **File Search** attached as well, and save the agent. Confirm the agent's tool list now
+   shows both File Search and the Foundry IQ knowledge base.
+6. **Grant the agent permission to query the knowledge base.** Connecting the knowledge base
+   creates a project connection named like `kb-invoice-po-policy-kb-...` that, by default,
+   authenticates as the **Foundry project's managed identity**. That identity needs read access
+   to Search; without it, every chat that calls Foundry IQ fails with
+   **"A user error occurred while executing a tool call."**
+
+   1. In the Azure portal, open the **Azure AI Search** service from Step 2.
+   2. Select **Access control (IAM) > Add > Add role assignment**.
+   3. Choose the **Search Index Data Reader** role and select **Next**.
+   4. Under **Assign access to**, choose **Managed identity**, select **+ Select members**,
+      set **Managed identity** to **Foundry project** (it may appear under the Foundry/AI
+      Services resource type), choose your project, and select **Select**.
+   5. Select **Review + assign**. Allow a few minutes for the role to take effect.
+
+   This is the **project's** identity, not the Search service's own identity used in Step 4.
+   If you cannot assign roles, ask your administrator to make this assignment. If your
+   organization uses a key-based connection instead, follow its approved configuration.
+
+### 6. Test both knowledge tools in the playground
+
+1. In the Foundry portal, stay on the agent's **Playground** from Step 5. If you left it, go to
+   **Build > Agents > invoice-discrepancy-assistant > Playground**.
+
+   Find the **Instructions** field in the agent configuration, not the chat message box.
+   In that field, find the paragraph beginning
+   `You have access to Contoso's official invoice/PO discrepancy policy through file search`.
+   Replace only that paragraph with the text below. Keep the other instructions, including the
+   PO lookup and escalation-contact instructions, and keep the existing tools attached.
 
    ```text
    You have access to Contoso's official invoice/PO discrepancy policy through File Search
@@ -162,7 +332,11 @@ and citations before accepting the extra cost and operational complexity.
    limitation rather than claiming that you consulted the source.
    ```
 
-2. Save, open a fresh playground conversation, and reuse these two questions from Module 3:
+   If you cannot find that paragraph, add the text to the **Instructions** field and remove any
+   conflicting statement that the policy is available only through File Search. Select
+   **Save**. Do not paste these instructions into the chat or edit `client.py`.
+
+2. Open a fresh playground conversation and reuse these two questions from Module 3:
 
    ```text
    What's our threshold for an automatic price-mismatch approval?
@@ -189,14 +363,25 @@ and citations before accepting the extra cost and operational complexity.
 > approval by default. You explicitly change that next; approval is not an inherent requirement
 > of every Foundry IQ deployment.
 
-### 6. Require approval on the correct Foundry IQ tool
+### 7. Require approval on the correct Foundry IQ tool
 
 The Foundry portal does **not** expose this approval setting. Use the **Foundry Toolkit VS Code
 extension's agent builder**:
 
-1. In VS Code, open Foundry Toolkit, select the same project, and open the existing
-   `invoice-discrepancy-assistant` in the agent builder. Refresh if the new knowledge tool
-   does not appear.
+1. In VS Code, open **Foundry Toolkit** in the left sidebar:
+   - Under **My Resources**, expand the same Foundry project used in Steps 2–6 and select
+     **Agents**.
+   - In the **Agents** editor, select the **Prompt Agent** tab. This displays a table with
+     columns such as **Name**, **Version**, and **Status**.
+   - Click the blue agent name for **`invoice-discrepancy-assistant`** in that table to open
+     its configuration in the agent builder. The name may be truncated; do not select a
+     similarly named agent such as `InvoiceDiscrepancy...`. Open the latest version you
+     just tested in the Foundry portal, rather than an older version under **Recent**.
+   - Do **not** select **+ Add Prompt Agent** or **Hosted Agent**: you are editing the
+     existing Prompt Agent, not creating another agent. You do not need to run or edit
+     `client.py` for this step.
+   - If the newly attached knowledge-base tool is missing, refresh the agent list and
+     reopen the latest version. Confirm the selected project matches the portal.
 2. In the agent's tool list, find the tool whose generated name starts with
    **`kb-knowledgebase...`**. Confirm it corresponds to your Foundry IQ knowledge base.
 3. Select that tool's **Configure** action and choose **Never auto-approve tools**.
@@ -210,7 +395,7 @@ extension's agent builder**:
 > Configuring approval on either of those instead will not produce the approval flow this lab
 > is testing. Do not remove unrelated tools or change their approval settings for this exercise.
 
-### 7. Add a separate conversations/responses approval demo
+### 8. Add a separate conversations/responses approval demo
 
 1. Return to the Module 0 working folder and activate the same virtual environment:
 
@@ -352,7 +537,7 @@ by its async client, without this remote approval loop. Keep the two client resp
 separate for this exercise; the existing agent's local function definitions remain attached,
 but this focused demo deliberately does not dispatch them.
 
-### 8. Run the approval and denial tests
+### 9. Run the approval and denial tests
 
 1. Run:
 
@@ -360,8 +545,17 @@ but this focused demo deliberately does not dispatch them.
    python foundry_iq_demo.py
    ```
 
-2. Ask the same two Module 3 policy questions from Step 5. For **at least one**, confirm a
-   Foundry IQ invocation produces:
+2. At the `YOU:` prompt in the VS Code terminal, enter each of these questions, one at a time:
+
+   ```text
+   What's our threshold for an automatic price-mismatch approval?
+   ```
+
+   ```text
+   How do we decide if an invoice is a confirmed duplicate versus a probable duplicate?
+   ```
+
+   For **at least one**, confirm a Foundry IQ invocation produces:
 
    ```text
    [Approval required for: <requested-tool-name>]
@@ -381,7 +575,7 @@ but this focused demo deliberately does not dispatch them.
    ```
 
    A correct answer alone is not a pass: you must observe the knowledge-base approval prompt.
-   If it remains absent, check Step 6's tool and deployed configuration before proceeding.
+   If it remains absent, check Step 7's tool and deployed configuration before proceeding.
 
 4. Exit and restart again. Ask the explicitly Foundry IQ-directed question and enter **no**.
    Confirm the denied retrieval is not reported as successfully consulted. File Search remains
@@ -395,10 +589,15 @@ Do not force the model to emit multiple requests just to pass the lab. If a resp
 several requests or a later response asks again, confirm the client prompts for each. The loop
 handles zero, one, multiple, and repeated requests regardless of which pattern your run produces.
 
-### 9. Compare the retrieval paths and preserve your work
+### 10. Compare the retrieval paths and preserve your work
 
-1. In a fresh conversation with **File Search and Foundry IQ both connected**, ask the exact
-   price-mismatch question you saved in Step 1, without a source-directing prefix.
+1. In a fresh conversation with **File Search and Foundry IQ both connected**, ask:
+
+   ```text
+   What's our threshold for an automatic price-mismatch approval?
+   ```
+
+   Do not add a source-directing prefix; this is the same question used for the Step 1 baseline.
 2. Compare the baseline and new results. Record observations rather than assuming that a
    connected tool was used:
 
@@ -410,7 +609,7 @@ handles zero, one, multiple, and repeated requests regardless of which pattern y
    | Answer usefulness | Clear, complete, actionable? | Any improvement or regression? |
    | Interaction/latency | No MCP approval pause | Approval pauses and perceived retrieval time |
 
-3. Include your explicitly Foundry IQ-directed run from Step 8 in the comparison if the
+3. Include your explicitly Foundry IQ-directed run from Step 9 in the comparison if the
    unmodified question selected only File Search. Label that directed run separately so it is
    not mistaken for an identical-prompt comparison.
 4. Discuss whether Foundry IQ produced more useful citation detail or a better answer. Equal
@@ -430,12 +629,18 @@ handles zero, one, multiple, and repeated requests regardless of which pattern y
 
 ## ✅ Checkpoint / Validate
 
-- [ ] Azure AI Search is in the project's resource group/region, with **API Access control =
-  Both**; its Foundry connection uses **Key authentication**.
+- [ ] Azure AI Search was created or connected from **Build > Knowledge**, is in the project's
+  resource group/region, uses Basic or higher, and permits the organization's approved
+  authentication method for its Foundry connection.
 - [ ] The private `invoice-po-policy` Blob container holds the unchanged Module 3 policy.
-- [ ] The Blob knowledge source uses **API Key**, **minimal** extraction, an embedding model,
-  and a chat completions model, and its status is **active**.
-- [ ] File Search and Foundry IQ remain attached; playground evidence shows each can be invoked.
+- [ ] The embedding deployment you selected shows **Succeeded** and is available to the project.
+- [ ] The Blob knowledge source uses the organization's approved **System assigned identity**
+  or **API Key** option, **Minimal** extraction, and the selected embedding and chat deployments.
+  Its status is **active**, and a retrieval test confirms the policy is accessible.
+- [ ] The Search managed identity has the required model access; if it is used for Blob
+  authentication, it also has access to read the storage account.
+- [ ] `invoice-po-policy-kb` was connected to the agent via **Add > Connect to Foundry IQ**.
+  File Search and Foundry IQ remain attached; playground evidence shows each can be invoked.
 - [ ] **Never auto-approve tools** was configured on **`kb-knowledgebase...`** and saved with
   **Deploy**, not on the standalone search or Web search tool.
 - [ ] `foundry_iq_demo.py` prompted for at least one Foundry IQ retrieval, accepted an approval,
@@ -466,18 +671,36 @@ Compare how clearly each answer distinguishes a policy rule from an actual PO/re
 - **Search creation or model selection is blocked:** Check resource-creation permissions,
   region, tier availability, and model deployment/quota. A chat model is not an embedding model.
   Use the facilitator's supported setup rather than making an unapproved tier or region change.
-- **Key-based authentication is rejected with a policy/compliance error:** Unlike a typo or
-  wrong key, this likely indicates an organizational Azure Policy restriction on Search or
-  Storage, not a lab mistake. Escalate to the subscription owner rather than retrying the same
-  steps.
-- **Search connection fails with an authentication error:** Check **Security + networking >
-  Keys > API Access control = Both**, then **Knowledge > Connection > Manage > Connected
-  resources > Authentication = Key authentication**. Confirm the saved key belongs to that
-  Search service and has not been rotated; do not use the Storage key in this field.
-- **Blob source cannot read the document:** Confirm the selected account/container and
-  **API Key** authentication. Check that the blob uploaded successfully and that resource
-  network rules allow the required service access. Do not make the container public or bypass
-  organizational network restrictions to fix an access error.
+- **Blob API Key is disabled or rejected:** Storage key access may be disabled by the account
+  configuration or organizational policy. Choose **System assigned identity** and grant the
+  Search identity Blob access, or ask the storage administrator. Do not override policy.
+- **Search key authentication is rejected with a policy/compliance error:** Ask the facilitator
+  for an approved identity-based configuration rather than overriding organizational policy.
+- **Playground shows "A user error occurred while executing a tool call" (trace:
+  `tool_user_error`, ~0 ms):** The Foundry IQ tool could not authenticate to Search. In
+  **Manage > Project details > Connections**, the `kb-...` **RemoteTool** connection normally
+  uses **ProjectManagedIdentity**. Grant the **Foundry project's managed identity** the
+  **Search Index Data Reader** role on the Search service, as described in Step 5, wait a few
+  minutes, then retry in a **new** chat.
+- **Search connection or knowledge-base retrieval fails with an authentication error:** Check
+  **Security + networking > Keys > API Access control** supports the selected method. For an
+  API key connection, confirm the saved key belongs to that Search service and has not been
+  rotated; do not use a Storage key. For Microsoft Entra ID, identify the principal used by
+  the failing operation and check its Search role assignments and network access. The project
+  connection shown as **CognitiveSearch** does not establish which identity the agent's MCP
+  tool uses. In Microsoft's documented project-managed-identity MCP configuration, the **Foundry
+  project's managed identity** needs **Search Index Data Reader** on the Search service for
+  retrieval. This is distinct from the **Search service's managed identity** used for Storage
+  and model access. Allow time for role propagation, and ask an administrator if roles need to
+  be assigned. See [Connect agents to Foundry IQ: authentication and permissions](https://learn.microsoft.com/azure/foundry/agents/how-to/foundry-iq-connect#authentication-and-permissions).
+- **Blob source cannot read the document:** Confirm the selected account/container and uploaded
+  blob. For **System assigned identity**, check **Storage Blob Data Reader** for the Search
+  identity; for **API Key**, check that Storage key access is permitted. Allow time for role
+  propagation and check that resource network rules allow the required service access. Do not
+  make the container public or bypass organizational network restrictions.
+- **Model access fails:** Check the role-assignment message, the Search managed identity, the
+  roles on the actual model resources, and network access. Allow time for role propagation and
+  use **Retry** if offered; ask an administrator if permissions cannot be assigned.
 - **Knowledge base remains inactive or returns no policy content:** Check source/indexing
   status and error details, the **minimal** extraction setting, and both selected model
   deployments. Wait for **active** before retrying; recreating the agent will not fix indexing.
@@ -501,7 +724,7 @@ Compare how clearly each answer distinguishes a policy rule from an actual PO/re
   overwrite it with this demo or rerun its version-creation code as an approval fix.
 - **Foundry IQ disappears after running the older client:** Its `create_version` tool list
   predates this module. Reconnect the knowledge base and redeploy its approval setting using
-  Steps 4 and 6; use `foundry_iq_demo.py` for these tests.
+  Steps 5 and 7; use `foundry_iq_demo.py` for these tests.
 - **Correct answer but unclear citations:** Inspect the terminal's returned annotations and
   the playground's tool/source details. Since both tools contain the same policy, mentioning
   the file name is not proof of Foundry IQ use. Record missing citation detail as a comparison

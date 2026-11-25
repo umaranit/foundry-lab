@@ -24,6 +24,12 @@ model selection and deployment options available in the portal.
 
 ### 1. Create a Foundry project
 
+Your **Azure subscription** contains a **resource group**, which groups the **Microsoft
+Foundry resource** with related Azure resources. The Foundry resource hosts **Foundry projects**
+and **model deployments**: a project organizes your work, while a deployment makes a named
+model and version available to it. The portal can create the Foundry resource with the project;
+you'll deploy the chat model separately in Step 4.
+
 1. Browse to the [Foundry portal](https://ai.azure.com) and sign in.
 2. Select **Create new** > **Project**.
 3. Fill in the project details:
@@ -42,11 +48,14 @@ model selection and deployment options available in the portal.
 ### 2. Tour the project home page
 
 1. On the project's **Home** page, locate the panel showing:
-   - **Project endpoint** (you'll need this in Module 5) - shown directly with a copy button.
+   - **Project endpoint** - copy and record the complete value for Module 5.
    - **Azure OpenAI endpoint** - a separate field, also shown directly.
    - **API key** - may show "API key authentication is disabled for this project" depending on
-     your project's configuration; this lab uses Azure AD credentials (DefaultAzureCredential/
-     AzureCliCredential), not API keys, so this is expected and not an error.
+     your project's configuration; the Foundry API key shown here is not needed for this lab, so
+     this is expected.
+
+   The Foundry Project Endpoint identifies the project; the Azure OpenAI endpoint is a separate
+   resource-level endpoint for Azure OpenAI model access. They are not interchangeable.
 2. Note the two quick-start cards also on the Home page: **Build an agent** (Start building) and
    **Use a model** (View deployments) - either can take you to where you're headed next, but this
    lab uses the left-hand navigation directly.
@@ -57,7 +66,8 @@ model selection and deployment options available in the portal.
    - **Improve:** Data, Evaluations, Training
 
    Specifically note: **Models** for Module 1's deployment, **Agents** for Module 2,
-   **Knowledge** for Module 3's document upload, and **Traces** for Module 10.
+   **Knowledge** for Module 3's document upload, **Evaluations** for Module 10, and **Traces**
+   for Module 11.
 
 ### 3. Browse the model catalog
 
@@ -72,9 +82,11 @@ model selection and deployment options available in the portal.
    `gpt-4o-mini`, and `gpt-4.1-nano` as defaults; check the retirement schedule before choosing
    any model. Select **Compare models** and compare candidates using these criteria:
    - **Capability:** does it reliably follow grounding/tool-use instructions?
-   - **Cost:** per-token pricing, relevant since this lab runs many test queries.
+   - **Cost:** compare input and output token prices, since this lab runs many test queries.
    - **Context window:** large enough for policy text + PO lookups + conversation history.
    - **Region/quota availability:** must be deployable in the region you confirmed in Module 0.
+   - **Deployment options and processing boundaries:** check the available types and where
+     requests may be processed; see Step 5 before choosing one.
 
 > Before each delivery, check [Microsoft's model retirement schedule](https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule)
 > to confirm model availability and retirement dates. For example, `gpt-4.1-nano` is deprecated
@@ -86,8 +98,10 @@ model selection and deployment options available in the portal.
    **Deploy**.
 2. Configure the deployment:
    - **Deployment name:** `invoice-assistant-chat` (you'll reference this name in later modules)
-   - **Deployment type:** **Global Standard** (pay-as-you-go) is sufficient for this lab; **Provisioned
-     throughput** is unnecessary unless you expect sustained high load.
+   - **Deployment type:** **Global Standard** (pay-as-you-go) is sufficient for this lab if
+     available and its processing boundary is permitted. Otherwise, choose an available,
+     approved type; see Step 5. **Provisioned throughput** is unnecessary unless you expect
+     sustained high load.
    - **Content filter:** leave the default filter in place for this scenario.
 3. Select **Deploy** and wait for the deployment status to show **Succeeded**.
 
@@ -113,48 +127,46 @@ Before moving on, make sure you can explain the difference between:
 > Learn more about [deployment types](https://learn.microsoft.com/azure/foundry/foundry-models/concepts/deployment-types)
 > and [model versioning](https://learn.microsoft.com/azure/foundry/foundry-models/concepts/model-versions).
 
-### 6. Deploy an embedding model
-
-1. In the model catalog, select a current embedding model such as `text-embedding-3-small` and
-   select **Deploy**.
-2. Configure the deployment:
-   - **Deployment name:** `invoice-assistant-embedding`
-   - **Deployment type:** **Global Standard**, if available for the selected model and region.
-3. Select **Deploy** and wait for the deployment status to show **Succeeded**. Module 7 uses this
-   deployment to index and retrieve the policy in Foundry IQ.
-
-### 7. Verify the deployments
+### 6. Verify the chat deployment
 
 1. In your project's left-hand navigation, select **Models**. On the **Deployments** tab, select
    **Serverless**.
-2. Confirm that both the chat and embedding deployments show **Succeeded**. Note the chat
-   deployment's **Name**: this is `invoice-assistant-chat` if you followed Step 4, or the name
-   you chose when deploying it.
-3. Select **Open playground** above the deployment list. In the **Playground** tab, check the
-   **Model** selector and select your chat deployment if necessary.
-4. For this simple model test, no tools are needed. If **Web search** appears under **Tools**,
-   use its menu to remove it if that option is available. Check the portal notice: Web search
-   can incur additional charges and send customer data outside the Azure compliance boundary.
-   Use only a non-sensitive test prompt.
-5. In **Chat with the model**, send a simple test prompt, for example:
+2. Confirm that the chat deployment shows **Succeeded**. Open its details and record:
+   - The **Foundry Project Endpoint** copied in Step 2.
+   - The **chat model deployment name**: `invoice-assistant-chat`, or the name you chose.
+   - The **model name and version** shown in the deployment details.
+   - The **deployment type** you selected.
+   - The **project/resource region** shown in the project or resource details.
+3. Return to the deployment list and select **Open playground**. In the **Playground** tab,
+   check the **Model** selector and select your chat deployment if necessary.
+4. For this model-only test, do not attach the policy or add tools. If **Web search** is enabled
+   under **Tools**, remove or disable it; ask your facilitator if neither option is available.
+   Check the portal notice: Web search can incur additional charges and send customer data outside
+   the Azure compliance boundary. Use only a non-sensitive test prompt.
+5. In **Chat with the model**, send this test prompt:
 
    ```text
-   In one sentence, what is accounts payable?
+   How would you identify an invoice discrepancy based on Contoso's invoice policies?
    ```
 
-6. Confirm you get a coherent response. You do not need to select **Save as agent** here; you
-   will create the agent in Module 2 using the deployment name noted above.
+6. Confirm you get a coherent response. The model can explain a general approach, but it does not
+   yet have access to Contoso's specific invoice policies; do not treat any policy details it
+   guesses as verified. You do not need to select **Save as agent** here.
+
+In [Module 2](02-build-the-agent-portal.md), you'll give this model an agent role and instructions;
+[Module 3](03-knowledge-base-grounding.md) then adds the actual policy as grounding.
 
 ## ✅ Checkpoint / Validate
 
 - [ ] Your Foundry project shows a **Succeeded** status on its Home page.
 - [ ] A chat model deployment named `invoice-assistant-chat` (or your chosen name) shows status
   **Succeeded** under **Models**.
-- [ ] An embedding model deployment named `invoice-assistant-embedding` (or your chosen name)
-  shows status **Succeeded** under **Models**.
-- [ ] You received a coherent response to a test prompt in the playground.
-- [ ] You can state which model you deployed and why, using the capability/cost/context
-  window/region criteria above.
+- [ ] You recorded the Foundry Project Endpoint, chat deployment name, model name and version,
+  deployment type, and project/resource region.
+- [ ] The test prompt produced a coherent general response; you understand that the model has
+  not yet accessed Contoso's specific policies.
+- [ ] You can explain your choice using capability, input/output token pricing, context window,
+  regional availability/quota, and deployment processing boundaries.
 
 ## 🚀 Try it yourself
 

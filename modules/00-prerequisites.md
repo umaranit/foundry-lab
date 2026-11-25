@@ -41,7 +41,7 @@ groups and Microsoft Foundry resources.
 
    | Role | Scope | Needed for |
    |---|---|---|
-   | **Contributor** | Subscription or resource group | Creating the project and model deployments in Module 1, plus resources in later modules. |
+   | **Contributor** | Subscription or resource group | Creating the project and chat model deployment in Module 1, plus resources in later modules, including the Module 7 embedding deployment. |
    | **Azure AI User / Foundry User** | Foundry project | Project-level data-plane access, including calling agents via SDK from Module 5 onward. |
    | **Foundry Project Manager** | Foundry project | Hosted Agent deployment in Module 9. |
 
@@ -64,17 +64,17 @@ groups and Microsoft Foundry resources.
 
 ### 3. Check model quota
 
-The lab deploys a chat model and an embedding model in Module 1. Quota approval can take time, so
-check it now rather than during Module 1.
+The lab deploys a chat model in Module 1 and an embedding model in Module 7. Quota approval can
+take time, so check both now.
 
 1. In the Foundry portal, go to **Management center** > **Quota** (or the equivalent quota page
    for your portal version).
 2. Check the model catalog for a current, non-deprecated chat model rather than defaulting to
    `gpt-4o` or `gpt-4o-mini`, and confirm available quota for it in your chosen region.
 3. Confirm available quota for an embedding model deployment, such as `text-embedding-3-small`,
-   in your chosen region.
-4. If quota is insufficient, submit a quota increase request now so it has time to be approved
-   before Module 1.
+   in your chosen region, or confirm that your facilitator will provide a supported deployment.
+4. If quota is needed but insufficient, submit a quota increase request now so the chat model has
+   quota before Module 1 and the embedding model has quota before Module 7.
 
 > Check [Microsoft's model retirement schedule](https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule)
 > before each delivery to confirm model availability and retirement dates.
@@ -142,7 +142,8 @@ Before moving on to Module 1, confirm all of the following:
 
 - [ ] `az account show` returns the subscription you'll use for this lab.
 - [ ] You can sign in to the Foundry portal and see/create a project.
-- [ ] You have confirmed model quota (or submitted a request) for your chosen region.
+- [ ] Chat model quota is available for Module 1, and you have checked embedding quota or
+  confirmed a facilitator-provided embedding deployment for Module 7.
 - [ ] VS Code is installed with the Foundry Toolkit extension enabled.
 - [ ] `python --version` reports Python 3.13.x.
 - [ ] `git --version` returns a version number.

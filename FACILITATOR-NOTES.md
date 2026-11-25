@@ -224,12 +224,14 @@ discuss retrieval trade-offs while they run. Wait for **active** rather than tre
 ### Common pitfalls
 - Search/Storage provisioning and indexing can consume the buffer. Confirm supported region,
   tier, authentication, and model deployments; do not silently select a more expensive tier.
-- **Pre-workshop policy check:** Verify that key authentication is permitted for Azure AI Search
-  and Storage in the target subscription/tenant, via a quick resource-creation test or the
-  subscription's policy owner. Azure Policy can disable key-based authentication entirely,
-  blocking Step 2's **API Access control = Both** and the Search connection's **Key authentication**
-  regardless of participant actions. If blocked, skip Module 7 for that cohort or arrange an
-  approved sandbox subscription without the restrictive policy.
+- **Pre-workshop policy check:** Confirm the approved Foundry-to-Search authentication method
+  and its permissions; the reference exercise uses a Search key, but Microsoft Entra ID is an
+  alternative. Check the identity used by the agent's MCP connection separately from the
+  project's Search connection. For Search-to-Storage, participants can use either an approved
+  Storage key or the Search system-assigned identity. Prepare a Basic or higher Search service
+  and permissions to enable its identity and grant it model access; managed-identity Blob access
+  also requires **Storage Blob Data Reader** on the storage account. Account for role propagation
+  and network restrictions.
 - Configure **Never auto-approve tools** on **`kb-knowledgebase...`** in the VS Code agent builder
   and **Deploy** it. The portal does not expose that setting; Web search and standalone Azure
   AI Search are the wrong tools.

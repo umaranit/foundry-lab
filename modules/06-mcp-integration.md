@@ -418,7 +418,11 @@ if __name__ == "__main__":
    project > **Agents** > `invoice-discrepancy-assistant` > **Versions**. Confirm that the
    version number printed in the terminal appears with `get_escalation_contact` alongside
    `lookup_po_by_number`, **File Search**, and **Code Interpreter**.
-5. Ask an escalation question:
+5. Return to the same VS Code terminal where `python client.py` is running. At the `YOU:` prompt,
+   type or paste the following question and press Enter. Do not type `YOU:` itself.
+
+   Ask the questions in this terminal, **not in the Foundry portal playground**: the local client
+   connects to the MCP server and handles its tool calls.
 
    ```text
    A price mismatch just got classified as Tier 2. Who should I escalate it to and what's the SLA?
@@ -426,7 +430,8 @@ if __name__ == "__main__":
 
    Confirm the agent calls `get_escalation_contact` and answers **AP Supervisor** within
    **2 business days**, matching policy Section 8.
-6. Ask about a case with no internal escalation:
+6. When the next `YOU:` prompt appears in the same terminal, ask about a case with no internal
+   escalation:
 
    ```text
    We have a missing PO on an $8,000 invoice. Who handles the escalation?
@@ -434,9 +439,9 @@ if __name__ == "__main__":
 
    Confirm the agent reports the invoice is rejected back to the vendor with no internal
    escalation (per the "Missing PO (> $5,000)" row), rather than inventing a contact.
-7. Re-test a Module 5 (Custom Function Tools) question (for example, looking up `PO-10234`) to
-   confirm `po_lookup_tool` still works on this new agent version.
-8. Type `exit` to end the session.
+7. At the next `YOU:` prompt, re-test a Module 5 (Custom Function Tools) question (for example,
+   looking up `PO-10234`) to confirm `po_lookup_tool` still works on this new agent version.
+8. At the next `YOU:` prompt, type `exit` and press Enter to end the session.
 
 ## ✅ Checkpoint / Validate
 
@@ -460,7 +465,8 @@ str) -> dict`, returning just the numeric SLA business-day count (or `None` for 
 case) parsed from the same Section 8 table. You don't need to touch `client.py` at all: because
 `mcp_function_tools` is built by iterating `tools_response.tools`, any new `@mcp.tool()` you add
 to the server is picked up and exposed to the agent automatically the next time you run
-`client.py`. Confirm the agent can call it with a question like:
+`client.py`. At the `YOU:` prompt in that terminal, confirm the agent can call it with a question
+like:
 
 ```text
 How many business days do we have to resolve a duplicate invoice escalation?
