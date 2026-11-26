@@ -7,6 +7,8 @@ to be verified by completion of the workshop documentation.
 
 ## How to use this document
 
+- **Opening or debrief:** Use [Modules 1–11: What we did and why](FACILITATOR-MODULE-GUIDE.md)
+  to connect the technical steps to the invoice decision and explain when the workshop switches agents.
 - **Before the workshop:** Rehearse the [Module 0](modules/00-prerequisites.md) access and quota
   checks in the intended subscription/region. Arrange approvals before the event; a pending
   quota request is not usable capacity. Read policy Sections 3–8 and the sample PO records so
