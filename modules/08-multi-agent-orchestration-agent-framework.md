@@ -26,6 +26,13 @@ environment you've already set up.
 - **By the end:** You can run sample queries for all three paths and observe the intended
   specialist handoff. You have a working local workflow, not a deployed multi-agent service.
 
+> **How this relates to a Hosted Agent:** This module runs the coordinator, specialists, and
+> PO lookup locally; only the model calls go to Foundry. In
+> [Module 9](09-deploy-to-foundry-hosted-agents.md), you adapt the price-mismatch specialist
+> and its PO lookup into a Foundry Hosted Agent that runs in a managed container. Module 9 does
+> **not** deploy the coordinator, the other specialists, or the full multi-agent workflow. The
+> Prompt Agent from Modules 2–7 remains separate.
+
 > **A separate, code-first agent system — not a new version of the Prompt Agent.** Every module
 > so far (2 through 7) built and extended **one** Prompt Agent called the
 > **Invoice Discrepancy Assistant**, configured first in the portal and then given new versions
@@ -41,16 +48,30 @@ environment you've already set up.
 
 ### 1. Install the Microsoft Agent Framework SDK
 
-1. From your activated virtual environment (the same one from Modules 5–6), install the
-   `agent-framework` package:
+1. In the VS Code terminal, go to your working folder and activate its virtual environment
+   (the same one from Modules 5–6). Your prompt must start with `(.venv)` before you continue:
 
    ```powershell
-   pip install agent-framework==1.14.0 agent-framework-orchestrations==1.1.0
+   .\.venv\Scripts\Activate.ps1
    ```
 
-   > These pinned versions were confirmed installed and tested for this module.
+   > Activate the `.venv` **inside the folder where you'll run the script**. Activating a `.venv`
+   > from a different folder gives you a different Python, and the import will fail.
 
-2. Confirm you're still signed in with the Azure CLI — this module's agents authenticate with
+2. Install the `agent-framework` packages using `python -m pip` so they go into the active
+   environment, then verify the import:
+
+   ```powershell
+   python -m pip install agent-framework-core==1.14.0 agent-framework-orchestrations==1.1.0 agent-framework-foundry==1.11.0 azure-identity python-dotenv
+   python -c "from agent_framework.foundry import FoundryChatClient; from agent_framework.orchestrations import HandoffBuilder; print('agent_framework OK')"
+   ```
+
+   > Install these three packages, **not** the `agent-framework` meta-package. The meta-package
+   > installs every integration (`agent-framework-core[all]`), and one of them
+   > (`agent-framework-azurefunctions`) now requires a newer core version, so pip fails with
+   > `ResolutionImpossible`. This module needs only core, orchestrations, and the Foundry client.
+
+3. Confirm you're still signed in with the Azure CLI — this module's agents authenticate with
    `AzureCliCredential` rather than the `DefaultAzureCredential` used in Modules 5–6 (both work;
    this just matches the convention used in the Agent Framework's own reference samples):
 
@@ -191,6 +212,7 @@ Append to `agent_framework_workflow.py`:
 price_mismatch_agent = Agent(
     client=client,
     name="price_mismatch_agent",
+    require_per_service_call_history_persistence=True,
     instructions="""
 You are a specialist in invoice price-mismatch discrepancies for Contoso Finance accounts
 payable, per policy Section 3 (CF-AP-POL-014).
@@ -219,6 +241,7 @@ next action and SLA.
 duplicate_invoice_agent = Agent(
     client=client,
     name="duplicate_invoice_agent",
+    require_per_service_call_history_persistence=True,
     instructions="""
 You are a specialist in duplicate-invoice discrepancies for Contoso Finance accounts payable, per
 policy Section 5 (CF-AP-POL-014).
@@ -249,6 +272,7 @@ corresponding next action.
 missing_po_agent = Agent(
     client=client,
     name="missing_po_agent",
+    require_per_service_call_history_persistence=True,
     instructions="""
 You are a specialist in missing-PO discrepancies for Contoso Finance accounts payable, per policy
 Section 6 (CF-AP-POL-014).
@@ -273,6 +297,10 @@ threshold tier, and the required next action.
 )
 ```
 
+> **Why `require_per_service_call_history_persistence=True`?** `HandoffBuilder` requires this on
+> every agent in a handoff workflow. Without it, `.build()` fails with a `ValueError`. It keeps
+> each agent's local conversation history in sync with the model service during handoffs.
+
 > **Why does `duplicate_invoice_agent` not get `lookup_po_by_number`?** Per the module scope, the
 > duplicate-invoice specialist reasons about invoice-to-invoice matching criteria (vendor,
 > amount, invoice number, submission date) — none of which requires a PO lookup. Giving it a tool
@@ -287,6 +315,7 @@ Append the coordinator:
 coordinator = Agent(
     client=client,
     name="coordinator",
+    require_per_service_call_history_persistence=True,
     instructions=(
         "You are the routing coordinator for Contoso Finance's invoice discrepancy triage "
         "system. Read the analyst's discrepancy description and decide which ONE specialist "
@@ -307,16 +336,28 @@ coordinator = Agent(
 Append the `HandoffBuilder` wiring:
 
 ```python
-workflow = (
-    HandoffBuilder(
-        name="invoice_discrepancy_routing",
-        participants=[coordinator, price_mismatch_agent, duplicate_invoice_agent, missing_po_agent],
+SPECIALIST_NAMES = {"price_mismatch_agent", "duplicate_invoice_agent", "missing_po_agent"}
+
+
+def create_workflow():
+    return (
+        HandoffBuilder(
+            name="invoice_discrepancy_routing",
+            participants=[coordinator, price_mismatch_agent, duplicate_invoice_agent, missing_po_agent],
+        )
+        .with_start_agent(coordinator)
+        .add_handoff(coordinator, [price_mismatch_agent, duplicate_invoice_agent, missing_po_agent])
+        .with_autonomous_mode(agents=[coordinator], turn_limits={"coordinator": 1})
+        .with_termination_condition(
+            lambda messages: any(
+                message.role == "assistant"
+                and message.author_name in SPECIALIST_NAMES
+                and message.text.strip()
+                for message in messages
+            )
+        )
+        .build()
     )
-    .with_start_agent(coordinator)
-    .add_handoff(coordinator, [price_mismatch_agent, duplicate_invoice_agent, missing_po_agent])
-    .with_autonomous_mode()
-    .build()
-)
 ```
 
 - `participants` lists every agent in the workflow, including the coordinator itself.
@@ -324,7 +365,9 @@ workflow = (
   request.
 - `add_handoff(coordinator, [...])` defines the coordinator's handoff targets: the three
   specialists that can handle the request.
-- `with_autonomous_mode()` runs the workflow without pausing for user input between handoffs.
+- Autonomous mode lets the coordinator retry once if it doesn't hand off. The termination condition
+  stops the workflow when a specialist produces an answer, instead of repeatedly prompting it.
+- `create_workflow()` creates a fresh workflow for each independent query.
 
 ### 9. Run the workflow against sample queries
 
@@ -345,30 +388,27 @@ SAMPLE_QUERIES = [
 async def main() -> None:
     for query in SAMPLE_QUERIES:
         print(f"\nQUERY: {query}")
+        workflow = create_workflow()
         result = await workflow.run(query)
-        # ⚠️ Verify before running: the exact shape of `result` for a HandoffBuilder workflow
-        # was not confirmed against an official end-to-end example at the time this module was
-        # written. Inspect `result` (for example `print(type(result))`, `result.get_outputs()`
-        # if available, or iterating `result` directly) against your installed agent-framework
-        # version's docs/IntelliSense, and adjust the line below to match.
-        print(f"RESULT: {result}")
+        answers = [
+            output
+            for output in result.get_outputs()
+            if output.text and any(
+                message.role == "assistant" and message.author_name in SPECIALIST_NAMES
+                for message in output.messages
+            )
+        ]
+        if not answers:
+            raise RuntimeError("The workflow did not produce a specialist answer.")
+        print(f"RESULT: {answers[-1].text}")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-> ## ⚠️ Verify before running
->
-> The official Microsoft Agent Framework reference material available at the time this module
-> was written showed `HandoffBuilder` workflows driven with `run_stream()`, handling
-> `RequestInfoEvent`s for the default human-in-the-loop interaction mode — it did not show a
-> confirmed, complete example of what `await workflow.run(query)` returns end-to-end for
-> `.with_autonomous_mode()`. Before you run Step 9, check your installed
-> `agent-framework` version's docs or VS Code IntelliSense for the `WorkflowRunResult` (or
-> equivalent) type `workflow.run()` returns, and adjust the `print(f"RESULT: {result}")` line
-> above to correctly extract the final specialist's text response — for example, it may need to
-> be `result.get_outputs()`, something iterated from `result`, or a similarly named accessor.
+`result.get_outputs()` returns the agent responses emitted during the workflow. The driver prints
+the specialist's answer and reports an error if no specialist answered.
 
 ### 10. Run it and confirm routing
 
@@ -418,13 +458,29 @@ the routing decision changes.
 
 ## ⚠️ Troubleshooting
 
-- **`ModuleNotFoundError: No module named 'agent_framework'`:** Confirm you ran
-  `pip install agent-framework==1.14.0 agent-framework-orchestrations==1.1.0` in the **same**
-  activated virtual environment you're using to run the script.
+- **`ModuleNotFoundError: No module named 'agent_framework'`:** The packages were installed into
+  a different Python than the one running the script. This usually happens if you ran `pip install`
+  before activating `.venv`, or activated a `.venv` from another folder. With `(.venv)` showing,
+  run the Step 1 install command again with `python -m pip`, then run the script again.
+- **`ResolutionImpossible` mentioning `agent-framework-azurefunctions` or `agent-framework-core`:**
+  You installed the `agent-framework` meta-package. Run the Step 1 command instead, which installs
+  only `agent-framework-core`, `agent-framework-orchestrations`, and `agent-framework-foundry`.
+- **`ValueError: Handoff workflows require all participant agents to have
+  'require_per_service_call_history_persistence=True'`:** Every `Agent(...)` in the workflow
+  (the coordinator and all three specialists) must include
+  `require_per_service_call_history_persistence=True`, as shown in Steps 6 and 7.
+- **Warnings like `No handoff configuration found for agent 'price_mismatch_agent'`:** These are
+  expected. The specialists are the final step, so they don't hand off further.
 - **Authentication errors from `AzureCliCredential`:** Confirm `az login` is still valid
   (`az account show`) — unlike `DefaultAzureCredential` in Modules 5–6, `AzureCliCredential` only
   checks the Azure CLI's signed-in session, so other credential sources (like a managed identity)
-  won't help here even if they'd otherwise work.
+  won't help here even if they'd otherwise work. If the Azure CLI token request times out after
+  10 seconds, check that `az account get-access-token --resource "https://ai.azure.com" --query
+  expiresOn -o tsv` succeeds. If it succeeds but is slow, use
+  `credential=AzureCliCredential(process_timeout=60)` in Step 5.
+- **The workflow keeps running after a specialist answers:** Check that the Step 8 workflow
+  includes the termination condition, and that Step 9 creates a fresh workflow for each query.
+  If it still waits, investigate authentication and model connectivity separately.
 - **`FileNotFoundError` reading `po-records.csv`:** Confirm `LAB_REPO_ROOT` in `.env` points at
   the root of your local clone of this repository (the folder directly containing
   `data/po-records.csv`), as in Module 5.
@@ -437,7 +493,3 @@ the routing decision changes.
   re-read the callout at the top of this module. This is an intentionally separate, code-first
   agent system; nothing here creates a new version of, or otherwise modifies, the **Invoice
   Discrepancy Assistant**.
-- **Uncertain what `workflow.run(query)` actually returns:** This is the known unconfirmed detail
-  flagged in Step 9's "Verify before running" box — inspect the result object at runtime (for
-  example, `print(type(result))` and `print(dir(result))`) against your installed
-  `agent-framework` version rather than assuming the shape shown in this module's sample code.

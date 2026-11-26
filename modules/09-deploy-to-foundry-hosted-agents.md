@@ -128,8 +128,9 @@ and must be cleaned up even if the request or provisioning fails.
 4. Create `src\requirements.txt`:
 
    ```text
-   agent-framework==1.14.0
+   agent-framework-core==1.14.0
    agent-framework-orchestrations==1.1.0
+   agent-framework-foundry==1.11.0
    agent-framework-foundry-hosting
    azure-ai-projects>=2.3.0
    azure-identity
