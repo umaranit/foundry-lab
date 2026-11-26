@@ -111,9 +111,9 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai.types.responses.response_input_param import FunctionCallOutput, ResponseInputParam
 
-from functions import lookup_po_by_number
-
 load_dotenv()
+
+from functions import lookup_po_by_number
 
 project_endpoint = os.environ["PROJECT_ENDPOINT"]
 AGENT_NAME = "invoice-discrepancy-assistant"
@@ -269,9 +269,15 @@ if __name__ == "__main__":
    `query`, `response`, and `ground_truth`, with `response` containing the agent's real answer
    text, not a placeholder.
 
-> **Re-run this script when you recreate the Module 6 agent version.** Update
-> `EVAL_AGENT_VERSION` to the new Module 6 version first: creating another version alone doesn't
-> change the pinned target. Otherwise the evaluation will score the *old* captured responses.
+> **Captured all 15 responses? Continue to Step 6.** You don't need to run the capture script
+> again. `capture_responses.py` collects answers from the Module 6 Prompt Agent version named by
+> `EVAL_AGENT_VERSION`. The evaluation script grades those saved answers; it doesn't ask the
+> agent the questions again.
+>
+> **If you later want to test a different Module 6 version**, set `EVAL_AGENT_VERSION` to that
+> version in `foundry-practice\.env`, then rerun `capture_responses.py` to save its answers
+> before evaluating them. Creating a version doesn't update the saved answers. The Module 9
+> hosted agent is separate; deleting it doesn't affect this dataset.
 
 ### 6. Write the evaluation script — upload the dataset
 
@@ -340,8 +346,11 @@ def upload_dataset() -> str:
 
 ### 7. Define the evaluation — item schema and the three built-in evaluators
 
-Append the evaluation-definition step. This is the exact verified shape from
-`mslearn-genaiops/src/evaluators/evaluate_agent.py`, with only the dataset/model names adapted:
+Open the same `evaluate.py` file you created in Step 6. After the `return data_id` line at
+the end of `upload_dataset()`, leave a blank line and paste the entire Python block below.
+Start `def create_evaluation_definition():` at the left margin, aligned with `def upload_dataset():`.
+It is a separate function that tells Foundry which fields to read from each saved answer and
+which three evaluators to use. Save the file and continue to Step 8; you'll run it in Step 10.
 
 ```python
 def create_evaluation_definition():
