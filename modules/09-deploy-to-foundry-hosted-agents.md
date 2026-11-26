@@ -85,33 +85,51 @@ and must be cleaned up even if the request or provisioning fails.
 
 ### 3. Create an isolated working folder and configure settings
 
-1. In your workshop working folder, create a **new** folder, separate from Module 8's script.
-   The following commands are PowerShell:
+1. In the VS Code terminal you used for Module 8, run these PowerShell commands to create and
+   enter the `hosted-agent` folder:
 
    ```powershell
-   New-Item -ItemType Directory -Path .\module09-hosted
-   Set-Location .\module09-hosted
+   New-Item -ItemType Directory -Path .\hosted-agent
+   Set-Location .\hosted-agent
    New-Item -ItemType Directory -Path .\src
    python --version
+   ```
+
+   Verify that the Python version is **3.13.x** before creating the isolated virtual environment,
+   using the same Python installation as Module 0. Then run:
+
+   ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
    az login
    az account show --output table
    ```
 
-   Verify that the Python version is **3.13.x** before creating the isolated virtual environment,
-   using the same Python installation as Module 0. The remote runtime is explicitly
-   `python_3_14`; it does not require a matching local interpreter or a second Python installation.
+   The resulting layout is:
+
+   ```text
+   foundry-practice\                   # existing workshop working folder
+     agent_framework_workflow.py       # Module 8 script; leave unchanged
+     hosted-agent\                    # new Hosted Agent folder
+       .venv\                         # separate Module 9 environment
+       src\
+   ```
+
+   The remote runtime is explicitly `python_3_14`; it does not require a matching local
+   interpreter or a second Python installation.
 
 2. Copy the existing fictional [po-records.csv](../data/po-records.csv) into the source folder.
-   Replace the placeholder with your lab clone's root:
+   Run `Get-Location` first: the path should end in `foundry-practice\hosted-agent`.
+   If it ends in `foundry-practice`, run `Set-Location .\hosted-agent`. Replace the
+   source placeholder below with your lab clone's root; the destination is relative
+   to `hosted-agent`:
 
    ```powershell
    Copy-Item -LiteralPath "C:\path\to\your\local\clone\data\po-records.csv" `
        -Destination .\src\po-records.csv
    ```
 
-3. Create `.env` in `module09-hosted`, **outside** `src`:
+3. Create `.env` in `hosted-agent`, **outside** `src`:
 
    ```text
    FOUNDRY_PROJECT_ENDPOINT=<copy the project endpoint from Foundry Home>
@@ -138,11 +156,13 @@ and must be cleaned up even if the request or provisioning fails.
    pydantic
    ```
 
-   Install into the new virtual environment, leaving Module 8's environment untouched:
+   Before installing, check `Get-Location` again if you opened a new terminal. Both
+   environments display `(.venv)` when active. From `hosted-agent`, use its Python
+   executable explicitly so Module 8's environment stays untouched:
 
    ```powershell
-   python -m pip install -r .\src\requirements.txt
-   python -m pip check
+   .\.venv\Scripts\python.exe -m pip install -r .\src\requirements.txt
+   .\.venv\Scripts\python.exe -m pip check
    ```
 
    > **⚠️ Verify against current docs:** The package names and adapter calls above are confirmed
@@ -272,7 +292,7 @@ and permissions reference if runtime model access is denied.
 
 ### 5. Validate the hosting adapter locally before uploading
 
-1. From `module09-hosted`, with its environment active, start the HTTP host:
+1. From `hosted-agent`, with its environment active, start the HTTP host:
 
    ```powershell
    $env:PYTHONNOUSERSITE = "1"
@@ -314,25 +334,24 @@ and permissions reference if runtime model access is denied.
    The protocol response alone may not expose every internal tool call. Use a debugger
    breakpoint in the lookup for local evidence if needed.
 
-4. Stop your local host with **Ctrl+C**. After a successful local test, capture the isolated
-   environment's resolved dependency versions for the remote build:
-
-   ```powershell
-   python -m pip freeze | Set-Content -Path .\src\requirements.txt -Encoding utf8
-   ```
+4. Stop your local host with **Ctrl+C**. Keep the `src\requirements.txt` you created in
+   Step 3 for the remote build. **Do not overwrite it with `pip freeze` from Windows.**
+   A freeze can turn Windows-only dependencies such as `pywin32` into unconditional
+   requirements that the hosted Linux build cannot install. If you already overwrote the
+   file, restore the package list from Step 3 before deploying.
 
    Inspect the manifest before uploading: it must contain package requirements, not local
-   paths, editable installs, or authenticated package URLs. Pinning improves repeatability.
+   paths, editable installs, or authenticated package URLs.
    Local testing on Python 3.13 validates the agent logic; remote build compatibility is a
    separate, server-side concern checked via the build logs (see **Remote build fails** in
    Troubleshooting).
 
 ### 6. Package, deploy, invoke, and clean up with the Python SDK
 
-Create `deploy_hosted_agent.py` in `module09-hosted`, **not** in `src`. The layout should now be:
+Create `deploy_hosted_agent.py` in `hosted-agent`, **not** in `src`. The layout should now be:
 
 ```text
-module09-hosted/
+hosted-agent/
   .env                      # local settings; never uploaded
   .venv/                    # local environment; never uploaded
   deploy_hosted_agent.py     # local deployment client; never uploaded
@@ -342,9 +361,9 @@ module09-hosted/
     po-records.csv
 ```
 
-The following is a complete deployment script. It uses the verified quickstart API shape,
-with a strict three-file ZIP allowlist, a uniquely allocated temporary directory, and nested
-cleanup so a restoration error does not skip the deletion attempt.
+In VS Code Explorer, right-click `hosted-agent` and select **New File**. Name it
+`deploy_hosted_agent.py` (or open it if you already created it). Paste the entire Python block
+below into that file and save it with **Ctrl+S**. The file belongs next to `src`, not inside it.
 
 ```python
 import os
@@ -438,7 +457,7 @@ def confirm_version_deleted(project_client: AIProjectClient, version: str) -> No
 
 def main() -> None:
     print(f"Project: {endpoint}\nDedicated lab agent: {agent_name}", flush=True)
-    with tempfile.TemporaryDirectory(prefix="module09-hosted-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="hosted-agent-") as temp_dir:
         code_zip = Path(temp_dir) / "source.zip"
         create_code_zip(source_dir, code_zip)
 
@@ -573,14 +592,21 @@ Before running, understand the lifecycle:
 
 ### 7. Run the cloud round trip and validate the response
 
+This is a real cloud deployment. Keep the temporary version running only long enough to
+verify its response and trace. Cleanup restores prior routing when present and deletes
+the temporary version so it stops incurring compute charges.
+
 1. Confirm the local host is stopped, your virtual environment is active, and `.env` names
    your **dedicated** lab agent. In VS Code, open `deploy_hosted_agent.py` and use
-   **Python: Select Interpreter** to select `module09-hosted\.venv\Scripts\python.exe`.
+   **Python: Select Interpreter** to select `hosted-agent\.venv\Scripts\python.exe`.
+   If VS Code recommends the parent `foundry-practice\.venv`, choose **Enter interpreter
+   path...** and browse to the Python executable inside `hosted-agent\.venv\Scripts`.
 2. Set a breakpoint on `if original_agent_endpoint is not None:` inside the cleanup
    `finally` block: click the gutter beside that line or place the cursor on it and press
    **F9**. Run the file using **Debug Python File** in the editor's Run/Debug menu.
-   This pauses execution after the response is printed but **before** endpoint restoration
-   and version deletion, without changing the Python code.
+   The breakpoint pauses **before cleanup, on both success and failure**. Check the terminal:
+   look for `Agent response:` before opening the portal. If provisioning or invocation
+   failed instead, press **F5 (Continue)** to let cleanup run and reveal the error.
 
    > **Why pause?** A normal `python .\deploy_hosted_agent.py` run immediately deletes the
    > temporary version after printing the answer. Use this debugger pause to complete Step 8's
@@ -608,16 +634,17 @@ quantity before changing prompts or trying another deployment.
 
 1. While the successful run is paused before cleanup, open the
    [Foundry portal](https://ai.azure.com). Open the project matching `FOUNDRY_PROJECT_ENDPOINT`
-   in `.env`, then navigate to **Agents** > **<agent name>** > **Versions** tab.
+   in `.env`, then navigate to **Agents** and select your hosted agent.
    Use the dedicated hosted agent name from `FOUNDRY_HOSTED_AGENT_NAME` in `.env`, not the
    earlier `invoice-discrepancy-assistant` Prompt Agent.
-2. Refresh the versions list and find the **new version number recorded in Step 7**. Confirm
-   its status is **Active**, then open that version's details and visually verify the
-   requested configuration:
+2. Open **Details > General**. Under **Agent configuration**, check **Status: Running**
+   and match **Active version** to the number recorded in Step 7. Under **Endpoints**,
+   check that **Responses protocol** is active. If your portal shows a **Versions** tab
+   instead, open the matching version there. Check the following where visible:
 
    | Portal check | Expected value |
    |---|---|
-   | Status | **Active** |
+   | Status | Agent **Running** with the matching **Active version**, or version **Active** |
    | Compute | **0.5 CPU / 1Gi memory** |
    | Runtime | `python_3_14` |
    | Protocol | `responses` version `2.0.0` |
@@ -628,7 +655,10 @@ quantity before changing prompts or trying another deployment.
 3. If this agent view exposes **Traces** or a link to the connected **Application Insights**,
    open it and find the test invocation using its time and agent/version identifiers where
    available. Confirm a trace is visible for the `INV-HOST-001` / `PO-10234` request and inspect
-   available lookup spans. Allow for telemetry ingestion delay and refresh. If tracing is
+   available lookup spans. If there is no separate tool span, open the invocation's
+   **Input + Output** panel: a **Tool** result returning `PO-10234` at `14.80` confirms
+   the lookup; an agent message saying it intends to call the tool does not.
+   Allow for telemetry ingestion delay and refresh. If tracing is
    not reachable from this view, record that limitation; do not treat console output as
    evidence of a visible trace.
 4. Return to VS Code promptly and select **Continue** (**F5**) to run cleanup. Do not stop the
@@ -639,7 +669,8 @@ quantity before changing prompts or trying another deployment.
 ### 9. Confirm cleanup, including failure paths
 
 1. In the [Foundry portal](https://ai.azure.com), open your project > **Agents** >
-   **<agent name>** > **Versions** tab, using `FOUNDRY_HOSTED_AGENT_NAME` from `.env`.
+   your dedicated hosted agent, using `FOUNDRY_HOSTED_AGENT_NAME` from `.env`. Use the
+   version selector or **Versions** tab, depending on your portal view.
    Refresh and confirm the temporary version recorded in Step 7 is gone. If a prior endpoint
    configuration existed, open the same agent's endpoint configuration and confirm the prior
    version selection/protocol configuration is restored.
@@ -676,8 +707,8 @@ Neither requires leaving this temporary Hosted Agent version running.
 > - [ ] The service ran through `ResponsesHostServer` locally, and the ZIP excluded secrets,
 >   `.env`, `.venv`, `.git`, caches, and the deployment client.
 > - [ ] The hosted version reached `"active"` before routing and invocation.
-> - [ ] I opened the Foundry portal and visually confirmed the hosted agent version's status,
->   compute, and runtime - not just the script's console output.
+> - [ ] I confirmed the running version in the portal and recorded which compute, runtime,
+>   and protocol details were visible rather than assuming undisplayed values were verified.
 > - [ ] The named-agent response used the `$14.80` PO price and correctly escalated the
 >   `$600` impact to Procurement with a 3-business-day SLA; I checked lookup execution evidence.
 > - [ ] Prior endpoint configuration was restored when present, and temporary-version deletion
@@ -710,10 +741,12 @@ adapter and handoff/result validation; do not substitute it into this exercise.
 | Local server exits immediately or `/responses` is missing | Use the complete service entry point with `ResponsesHostServer(...).run()`, not Module 8's batch runner. Check port 8088 is not occupied by another process; do not terminate someone else's service. |
 | Local authentication works but cloud inference returns 401/403 | Check the hosted runtime identity's model access separately from the deploying user's role. Do not upload `.azure` caches or secrets, or rely on `AzureCliCredential` inside the container. |
 | Creation or invocation is denied | Verify project endpoint, tenant, Foundry Project Manager permissions, and applicable network restrictions with the facilitator. Do not bypass network or organization policies. |
-| Remote build fails | Inspect build logs for Python 3.14/dependency compatibility, missing packages, local-only requirements, or unavailable package sources. Use the pinned manifest from the isolated environment and recheck current runtime support. |
+| `Workspace not found` before a version ID is printed | Compare the printed project endpoint with Foundry Home and verify the tenant and subscription with `az account show --output table`. To test the same CLI identity as Module 8, set `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` in the local `hosted-agent\.env` and start a fresh debug session. Do not add it to the hosted runtime settings. Check the dedicated agent for a new version before retrying; if the error persists, verify project access. |
+| Remote build fails | Inspect the provisioning error for the failing package. If it says no version satisfies `pywin32`, restore the Step 3 requirements instead of uploading a Windows `pip freeze`. For other failures, check build logs for Python 3.14 compatibility, missing packages, or unavailable package sources. |
 | Missing CSV or wrong working directory | ZIP entries must be at the root. The tool resolves `po-records.csv` next to `main.py`, not via `LAB_REPO_ROOT`. Do not upload the entire working folder to fix one missing file. |
 | Model deployment not found | `FOUNDRY_MODEL_NAME` must be the actual deployment name in this project, not a catalog model name. The entry point and deployment environment must use the same variable name. |
-| Provisioning reports `"failed"` or never becomes `"active"` | Inspect the reported details and container/build logs for startup, protocol, dependencies, identity, region, or capacity problems. Let cleanup finish; do not route an unready version or treat a longer timeout as a fix. |
+| A version ID was printed, then provisioning reported `"failed"` | Note the version and press **F5 (Continue)** at the cleanup breakpoint. Confirm deletion in the terminal. If the debugger then pauses on the provisioning exception in `wait_for_active_version`, enter `details["error"]` in the **Debug Console** to read the service code and message. Use that error to guide the next fix before redeploying. |
+| Provisioning times out without reaching `"active"` | Let cleanup finish and confirm deletion. Inspect provisioning details and build logs; do not route an unready version or treat a longer timeout as a fix. |
 | Invocation reaches the wrong version | Check the dedicated agent name and saved/updated endpoint settings. This script uses the named-agent client and a 100% fixed-ratio rule, not a direct model client. Avoid concurrent routing changes. |
 | Agent uses the wrong policy tier | Verify the actual lookup result and both thresholds. For the main query, `$600` exceeds the dollar limit even though `4.05%` does not exceed 5%. An HTTP success is not a correctness check. |
 | Endpoint restoration fails | The nested `finally` still attempts deletion, which can leave the dedicated endpoint pointing at a deleted version. Restore its saved configuration manually and confirm both routing and deletion; never use this pattern on a shared production endpoint. |
