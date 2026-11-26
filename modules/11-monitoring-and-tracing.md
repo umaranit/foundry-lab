@@ -48,17 +48,20 @@ agents show up in the same place with no comparable instrumentation effort.
 
 ### 1. Reuse your working folder and install the tracing packages
 
-1. Reactivate the virtual environment you've been using since Module 0:
+1. In VS Code Explorer, right-click the working folder containing Module 10's `evaluate.py`
+   and select **Open in Integrated Terminal**. From that folder, activate the Module 0
+   environment (not the one inside `hosted-agent`):
 
    ```powershell
-   Set-Location "$HOME\foundry-practice"
    .\.venv\Scripts\Activate.ps1
    ```
 
-2. Install the two packages this module adds on top of everything installed in Modules 5–8:
+2. Install the tracing packages in that environment. The OpenAI instrumentor imports
+   `httpx`. Keep the compatible versions below: this instrumentor calls `wrapt` with the
+   `module=` keyword, which `wrapt` 2.5.2 does not accept.
 
    ```powershell
-   pip install azure-monitor-opentelemetry opentelemetry-instrumentation-openai-v2
+   .\.venv\Scripts\python.exe -m pip install azure-monitor-opentelemetry "opentelemetry-instrumentation-openai-v2==2.3b0" "opentelemetry-util-genai==0.3b0" "wrapt==1.17.3" httpx
    ```
 
    - `azure-monitor-opentelemetry` configures the OpenTelemetry SDK's global tracer provider with
@@ -115,9 +118,9 @@ from opentelemetry import trace
 from opentelemetry.instrumentation.openai_v2 import OpenAIInstrumentor
 from openai.types.responses.response_input_param import FunctionCallOutput, ResponseInputParam
 
-from functions import lookup_po_by_number
-
 load_dotenv()
+
+from functions import lookup_po_by_number
 
 project_endpoint = os.environ["PROJECT_ENDPOINT"]
 AGENT_NAME = "invoice-discrepancy-assistant"
@@ -292,25 +295,23 @@ if __name__ == "__main__":
 3. Wait a minute or two for Application Insights ingestion — traces don't always appear
    instantly in the portal views in the next steps.
 
-### 6. View aggregated metrics in the Foundry portal: Monitoring → Resource usage
+### 6. View project usage in the Foundry portal
 
-1. In the Foundry portal, open your project.
-2. In the left navigation, select **Monitoring**.
-3. Select **Resource usage** to see a summary of model interactions.
-4. Confirm you can see, for the three calls you just made:
-   - **Total requests** — should include your three (plus any earlier Module 5–10 traffic if
-     Application Insights was already connected then).
-   - **Total token count**, **prompt/input token count**, and **completion/output token count** —
-     compare these against the `[index] TOKENS: ...` lines your script printed.
-   - A **latency** metric — compare against the `[index] DURATION: ...` lines your script
-     printed.
-5. If no data appears yet, wait a minute and refresh the page — this matches the reference lab's
-   own note that ingestion isn't instantaneous.
+1. Open your project and select **Observe > Monitor > Overview** in the left navigation.
+   You do not need to open an agent. If your portal shows **Monitoring > Resource usage**
+   instead, use that view.
+2. Select **Last Day** to narrow the time range. Read **Agent runs** and **Total token usage**.
+   These totals include other project activity in the selected period, not just your three
+   sample queries. Agent runs are not the same as individual model requests.
+3. Use **View token usage** for the available token breakdown. Expand **Operational metrics**
+   and look for request and latency metrics if exposed. To inspect the duration and tokens
+   for a specific query rather than a project aggregate, continue to Step 7.
+4. If recent activity is missing, wait a minute and refresh before changing any settings.
 
 ### 7. View one individual trace/span tree in the Traces view
 
-1. Still in the Foundry portal, in the left navigation select **Agents**, then select the
-   **Traces** tab at the top.
+1. In the left navigation, select **Observe > Traces**. If your portal exposes tracing
+   under **Agents** instead, open its **Traces** tab.
 2. Find one of the three traces you just generated (search or filter by time, or by Response ID
    if you noted one from the console output) and open it.
 3. Confirm the span tree shows:
@@ -380,13 +381,12 @@ a production monitoring setup would want both before shipping a prompt or agent 
 
 ## ✅ Checkpoint / Validate
 
-- [ ] `pip install azure-monitor-opentelemetry opentelemetry-instrumentation-openai-v2` succeeded
-  in your Module 0 virtual environment.
+- [ ] The Step 1 tracing packages are installed in your Module 0 virtual environment.
 - [ ] `python tracing_demo.py` ran to completion and printed a query, duration, and (if available)
   token usage for all three sample rows.
-- [ ] The Foundry portal's **Monitoring → Resource usage** page shows request counts, token
-  counts, and latency that are consistent with what the script printed.
-- [ ] The Foundry portal's **Agents → Traces** tab shows an individual trace for one of your three
+- [ ] I checked project activity and token usage for the selected period under **Monitor > Overview**
+  (or **Monitoring > Resource usage**) without treating those totals as per-query measurements.
+- [ ] The Foundry portal's **Traces** view shows an individual trace for one of your three
   sample queries, with your `invoice_query_N` parent span and its `response.duration_s`/
   `response.total_tokens` attributes, and at least one auto-instrumented model-call child span
   nested underneath it.
@@ -410,7 +410,7 @@ full set — does it correspond to a query that needed a tool call (`lookup_po_b
 - **`project_client.telemetry.get_application_insights_connection_string()` returns `None` or
   raises an error:** Your project doesn't have an Application Insights resource connected yet —
   revisit Step 2 and use the portal's **Connect** prompt under **Agents → Traces** to link one.
-- **No data in `Monitoring → Resource usage` or `Agents → Traces` after running the script:**
+- **No recent data in Monitor or Traces after running the script:**
   Ingestion typically takes a minute or two; wait and refresh. If it's been several minutes,
   re-check that `configure_azure_monitor(connection_string=...)` ran (no exception at startup)
   and that the connection string came from the same project you're viewing in the portal.
